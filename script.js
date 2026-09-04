@@ -31,75 +31,60 @@ function tick() {
 setInterval(tick, 1000);
 
 const heroCan = document.getElementById('heroCan');
+const can3d = document.getElementById('can3d');
 const popBurst = document.getElementById('popBurst');
 let audioCtx = null;
 let hasPlayedOpenPop = false;
+const baseTilt = 'rotateX(8deg) rotateY(-18deg)';
 
 function getAudio() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume().catch(() => {});
-  }
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
   return audioCtx;
 }
 
 function playPopSound() {
   const ctx = getAudio();
   const now = ctx.currentTime;
-
   const duration = 0.28;
   const bufferSize = Math.floor(ctx.sampleRate * duration);
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
   const data = buffer.getChannelData(0);
   for (let i = 0; i < bufferSize; i++) {
     const t = i / bufferSize;
-    const env = Math.exp(-t * 18) * (1 - t * 0.4);
-    data[i] = (Math.random() * 2 - 1) * env;
+    data[i] = (Math.random() * 2 - 1) * Math.exp(-t * 18) * (1 - t * 0.4);
   }
   const noise = ctx.createBufferSource();
   noise.buffer = buffer;
-  const noiseFilter = ctx.createBiquadFilter();
-  noiseFilter.type = 'bandpass';
-  noiseFilter.frequency.value = 1800;
-  noiseFilter.Q.value = 0.7;
-  const noiseGain = ctx.createGain();
-  noiseGain.gain.setValueAtTime(0.55, now);
-  noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-  noise.connect(noiseFilter);
-  noiseFilter.connect(noiseGain);
-  noiseGain.connect(ctx.destination);
-  noise.start(now);
-  noise.stop(now + duration);
+  const nf = ctx.createBiquadFilter();
+  nf.type = 'bandpass'; nf.frequency.value = 1800; nf.Q.value = 0.7;
+  const ng = ctx.createGain();
+  ng.gain.setValueAtTime(0.55, now);
+  ng.gain.exponentialRampToValueAtTime(0.001, now + duration);
+  noise.connect(nf); nf.connect(ng); ng.connect(ctx.destination);
+  noise.start(now); noise.stop(now + duration);
 
   const osc = ctx.createOscillator();
   osc.type = 'triangle';
   osc.frequency.setValueAtTime(920, now);
   osc.frequency.exponentialRampToValueAtTime(180, now + 0.22);
-  const oscGain = ctx.createGain();
-  oscGain.gain.setValueAtTime(0.22, now);
-  oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-  const oscFilter = ctx.createBiquadFilter();
-  oscFilter.type = 'lowpass';
-  oscFilter.frequency.value = 2400;
-  osc.connect(oscFilter);
-  oscFilter.connect(oscGain);
-  oscGain.connect(ctx.destination);
-  osc.start(now);
-  osc.stop(now + 0.26);
+  const og = ctx.createGain();
+  og.gain.setValueAtTime(0.22, now);
+  og.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+  const of = ctx.createBiquadFilter();
+  of.type = 'lowpass'; of.frequency.value = 2400;
+  osc.connect(of); of.connect(og); og.connect(ctx.destination);
+  osc.start(now); osc.stop(now + 0.26);
 
   const thump = ctx.createOscillator();
   thump.type = 'sine';
   thump.frequency.setValueAtTime(95, now);
   thump.frequency.exponentialRampToValueAtTime(40, now + 0.12);
-  const thumpGain = ctx.createGain();
-  thumpGain.gain.setValueAtTime(0.35, now);
-  thumpGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
-  thump.connect(thumpGain);
-  thumpGain.connect(ctx.destination);
-  thump.start(now);
-  thump.stop(now + 0.15);
+  const tg = ctx.createGain();
+  tg.gain.setValueAtTime(0.35, now);
+  tg.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+  thump.connect(tg); tg.connect(ctx.destination);
+  thump.start(now); thump.stop(now + 0.15);
 }
 
 function makeParticles() {
@@ -136,48 +121,43 @@ function tryFirstOpenPop() {
 function unlockAndMaybeOpen(e) {
   getAudio();
   const onCan = heroCan && (e.target === heroCan || heroCan.contains(e.target));
-  if (!onCan) {
-    tryFirstOpenPop();
-  }
+  if (!onCan) tryFirstOpenPop();
   document.removeEventListener('pointerdown', unlockAndMaybeOpen);
   document.removeEventListener('keydown', unlockAndMaybeOpen);
 }
-
 document.addEventListener('pointerdown', unlockAndMaybeOpen, { passive: true });
 document.addEventListener('keydown', unlockAndMaybeOpen);
 
 heroCan?.addEventListener('pointerdown', () => getAudio(), { passive: true });
 heroCan?.addEventListener('click', () => popCan(false));
-heroCan?.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault();
-    popCan(false);
-  }
+heroCan?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); popCan(false); }
 });
 
 heroCan?.addEventListener('pointermove', (event) => {
-  if (heroCan.classList.contains('pop')) return;
+  if (!can3d || heroCan.classList.contains('pop')) return;
   const r = heroCan.getBoundingClientRect();
   const x = (event.clientX - r.left) / r.width - 0.5;
   const y = (event.clientY - r.top) / r.height - 0.5;
-  heroCan.style.transform = `perspective(700px) rotateY(${x * 7}deg) rotateX(${y * -5}deg)`;
+  const rotY = -18 + x * 28;
+  const rotX = 8 + y * -16;
+  can3d.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
 });
 heroCan?.addEventListener('pointerleave', () => {
-  if (!heroCan.classList.contains('pop')) heroCan.style.transform = '';
+  if (can3d && !heroCan.classList.contains('pop')) {
+    can3d.style.transform = baseTilt;
+  }
 });
 heroCan?.addEventListener('animationend', (event) => {
-  if (event.animationName === 'canPop') {
+  if (event.animationName === 'canPop3d' || event.animationName === 'canPop') {
     heroCan.classList.remove('pop');
-    heroCan.style.transform = '';
+    if (can3d) can3d.style.transform = baseTilt;
   }
 });
 
 const io = new IntersectionObserver(
-  (entries) => entries.forEach((e) => {
-    if (e.isIntersecting) e.target.classList.add('in');
-  }),
+  (entries) => entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add('in'); }),
   { threshold: 0.12 }
 );
-document
-  .querySelectorAll('.problem-card,.feature-card,.popup-mock,.privacy-copy,.cta-can,.install-steps article')
+document.querySelectorAll('.problem-card,.feature-card,.popup-mock,.privacy-copy,.cta-can,.install-steps article')
   .forEach((el) => io.observe(el));
