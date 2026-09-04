@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#070708">
+  <meta name="description" content="Zero Grok lets you see your AI usage before you hit the limit — across Grok, Claude, ChatGPT and Gemini.">
+  <title>Zero Grok — Know your AI limit before it hits zero</title>
+  <link rel="icon" href="assets/icon128.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="noise"></div>
+  <header class="nav shell">
+    <a class="brand" href="#top" aria-label="Zero Grok home"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.25"/><path d="M12 3.75v8.25l5.2 5.2"/></svg></span><span>ZERO GROK</span></a>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#privacy">Privacy</a>
+    </nav>
+    <a class="nav-cta" href="#install-guide">Download <span>↗</span></a>
+  </header>
+
+  <main id="top">
+    <section class="hero shell">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="pulse"></span> AI usage, finally visible</div>
+        <h1>Know your AI limit<br><em>before it hits zero.</em></h1>
+        <p class="hero-lede">Zero Grok turns invisible AI limits into a tiny, always-there meter. Watch your usage drain, see when it refills, and keep every AI session under control.</p>
+        <div class="hero-actions" id="install">
+          <a class="btn btn-primary" href="#download" id="installBtn">Download Zero Grok <span>→</span></a>
+          <a class="btn btn-ghost" href="#demo">See it in action <span>↓</span></a>
+        </div>
+        <div class="trust-row"><span>✓ Free &amp; SuperGrok</span><span>✓ Local-only data</span><span>✓ 4 AI providers</span></div><div class="local-beta"><span class="local-dot"></span><span>Local beta</span><span>·</span><span>Download the extension ZIP and load it unpacked</span></div>
+      </div>
+      <div class="hero-visual" id="demo">
+        <div class="orb orb-a"></div><div class="orb orb-b"></div>
+        <div class="visual-label label-top">LIVE USAGE</div>
+        <div class="can-scene" aria-label="Animated Zero Grok usage can">
+          <div class="ring ring-1"></div><div class="ring ring-2"></div>
+          <div class="can-shadow"></div>
+          <button class="can can-interactive" id="heroCan" type="button" aria-label="Interact with the Zero Grok can">
+            <div class="can-top"><span></span></div>
+            <div class="can-liquid" id="canLiquid"></div>
+            <div class="can-band"><strong>ZERO</strong><small>GROK</small></div>
+            <div class="bubble b1"></div><div class="bubble b2"></div><div class="bubble b3"></div><div class="bubble b4"></div>
+            <div class="can-sheen"></div>
+          </button>
+          <div class="pop-burst" id="popBurst" aria-hidden="true"></div>
+          <div class="usage-readout"><strong id="heroPercent">64%</strong><span>remaining</span></div>
+          <div class="refill">↻ refills in <b id="countdown">2h 18m</b><span class="can-hint">· click the can</span></div>
+        </div>
+        <div class="provider-stack">
+          <div class="provider active"><i class="dot grok"></i><b>Grok</b><span>64%</span><div><u style="width:64%"></u></div></div>
+          <div class="provider"><i class="dot claude"></i><b>Claude</b><span>82%</span><div><u style="width:82%"></u></div></div>
+          <div class="provider"><i class="dot chatgpt"></i><b>ChatGPT</b><span>47%</span><div><u style="width:47%"></u></div></div>
+          <div class="provider"><i class="dot gemini"></i><b>Gemini</b><span>91%</span><div><u style="width:91%"></u></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ticker"><div>GROK</div><span>×</span><div>CLAUDE</div><span>×</span><div>CHATGPT</div><span>×</span><div>GEMINI</div><span>×</span><div>ONE METER</div></section>
+
+    <section class="problem shell" id="how">
+      <div class="section-kicker">THE PROBLEM</div>
+      <div class="split-head"><h2>The limit shouldn't<br>be a <em>surprise.</em></h2><p>Most AI apps make you guess. You chat, you work, you get in the flow — then suddenly you're rate-limited. Zero Grok gives you a visual warning before the wall appears.</p></div>
+      <div class="cards problem-cards">
+        <article class="problem-card"><span>01</span><h3>Invisible</h3><p>Your remaining usage is often buried behind settings, rolling windows, or not exposed at all.</p></article>
+        <article class="problem-card"><span>02</span><h3>Unexpected</h3><p>Limits arrive at the worst possible time: halfway through a task, call, or late-night rabbit hole.</p></article>
+        <article class="problem-card dark"><span>03</span><h3>Now visible</h3><p>Zero Grok keeps a tiny live signal beside your work so you always know what you have left.</p></article>
+      </div>
+    </section>
+
+    <section class="feature-section" id="features">
+      <div class="shell">
+        <div class="section-kicker">ONE TINY CAN. A LOT OF SIGNAL.</div>
+        <div class="split-head"><h2>Everything you need.<br><em>Nothing in the way.</em></h2><p>Designed to disappear into your workflow until the moment you need it. Drag it, theme it, hide it, or let it quietly do its job.</p></div>
+        <div class="feature-grid">
+          <article class="feature-card"><div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5h16v9.2a2.3 2.3 0 0 1-2.3 2.3H6.3A2.3 2.3 0 0 1 4 17.7V8.5Zm2.5-3.2h11l1.2 3.2H5.3l1.2-3.2Z"/></svg></div><h3>Always-on meter</h3><p>A floating can that shows remaining usage at a glance. No need to open a menu or dig through settings.</p></article>
+          <article class="feature-card"><div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17Zm0 2.2a6.3 6.3 0 1 0 0 12.6 6.3 6.3 0 0 0 0-12.6Zm-.8 2.6h1.6v4.1l3 1.8-.8 1.3-3.5-2.1V8.3Z"/></svg></div><h3>Live refill timers</h3><p>See exactly when each provider window resets so you can plan around the limit instead of discovering it mid-task.</p></article>
+          <article class="feature-card"><div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 6.5h14v2.2H5V6.5Zm0 4.4h14v2.2H5v-2.2Zm0 4.4h9.5v2.2H5v-2.2Z"/></svg></div><h3>Four providers, one view</h3><p>Grok, Claude, ChatGPT and Gemini side by side. Switch focus without opening four different dashboards.</p></article>
+          <article class="feature-card"><div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13.2 3 6 12h5l-1.2 9L17 12h-5l1.2-9Z"/></svg></div><h3>Alerts that matter</h3><p>Set your own warning thresholds and get notified before usage gets critical.</p><div class="alert-line"><i></i><span>20% warning threshold</span></div></article>
+          <article class="feature-card"><div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 3.5a3 3 0 1 0 0 6h3v-3a3 3 0 0 0-3-3ZM16 3.5a3 3 0 1 1 0 6h-3v-3a3 3 0 0 1 3-3ZM8 20.5a3 3 0 1 1 0-6h3v3a3 3 0 0 1-3 3ZM16 20.5a3 3 0 1 0 0-6h-3v3a3 3 0 0 0 3 3Z"/></svg></div><h3>Keyboard ready</h3><p>Press <kbd>Alt</kbd> + <kbd>U</kbd> to toggle the can without breaking your flow.</p><div class="keys"><kbd>ALT</kbd><b>+</b><kbd>U</kbd></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="showcase shell">
+      <div class="showcase-copy"><div class="section-kicker">BUILT FOR REAL WORK</div><h2>It stays out of your way.<br><em>Until it matters.</em></h2><p>Zero Grok is intentionally small. The floating can gives you one glanceable signal, while the popup gives you the full picture across your enabled AI accounts.</p><ul><li><span>01</span> Floating usage meter</li><li><span>02</span> Multi-provider overview</li><li><span>03</span> History &amp; export</li><li><span>04</span> Custom themes &amp; position</li></ul></div>
+      <div class="popup-mock">
+        <div class="mock-top"><b>Zero Grok</b><span>All AI usage at a glance</span><i>×</i></div>
+        <div class="mock-card"><div><i class="dot grok"></i><b>Grok</b><strong>64%</strong></div><div class="mock-bar"><span style="width:64%"></span></div><small>Fast · 32 / 50 queries remaining</small></div>
+        <div class="mock-card"><div><i class="dot claude"></i><b>Claude</b><strong>82%</strong></div><div class="mock-bar"><span style="width:82%"></span></div><small>5h window · healthy</small></div>
+        <div class="mock-card"><div><i class="dot chatgpt"></i><b>ChatGPT</b><strong>47%</strong></div><div class="mock-bar"><span style="width:47%"></span></div><small>Weekly window · 47% remaining</small></div>
+        <div class="mock-card"><div><i class="dot gemini"></i><b>Gemini</b><strong>91%</strong></div><div class="mock-bar"><span style="width:91%"></span></div><small>5h window · healthy</small></div>
+        <div class="mock-actions"><button>Refresh all</button><button>Options</button></div><small class="mock-privacy">All data stays in your browser. No servers.</small>
+      </div>
+    </section>
+
+    <section class="install-section" id="install-guide">
+      <div class="shell install-grid">
+        <div>
+          <div class="section-kicker">LOCAL BETA</div>
+          <h2>Install in<br><em>under a minute.</em></h2>
+        </div>
+        <div class="install-steps">
+          <article><span>01</span><h3>Download</h3><p>Grab the Zero Grok ZIP directly. No Chrome Web Store account or listing required.</p><a class="text-link" href="downloads/zero-grok.zip" download>Download ZIP <b>↗</b></a></article>
+          <article><span>02</span><h3>Unzip</h3><p>Extract the downloaded file somewhere on your computer so Chrome can access the extension folder.</p></article>
+          <article><span>03</span><h3>Load unpacked</h3><p>Open <code>chrome://extensions</code>, turn on Developer mode, choose Load unpacked, and select the extracted <code>zero-grok</code> folder.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="privacy-section" id="privacy">
+      <div class="shell privacy-grid"><div><div class="section-kicker">PRIVATE BY DESIGN</div><h2>Your usage.<br><em>Your browser.</em></h2></div><div class="privacy-copy"><p>Zero Grok stores its settings, usage data and history in <strong>chrome.storage.local</strong>. It doesn't need an account, analytics backend, or external server to show your meter.</p><div class="privacy-badges"><span>NO ACCOUNT</span><span>NO TRACKING</span><span>NO EXTERNAL SERVER</span></div></div></div>
+    </section>
+
+    <section class="cta shell" id="download">
+      <div class="cta-can"><div class="can small"><div class="can-top"><span></span></div><div class="can-liquid"></div><div class="can-band"><strong>ZERO</strong><small>GROK</small></div><div class="can-sheen"></div></div></div>
+      <div><div class="section-kicker">STOP GUESSING</div><h2>Know what you have<br><em>left.</em></h2><p>Install Zero Grok and make your AI limits visible in seconds.</p><a class="btn btn-primary" href="#" id="downloadBtn">Download Zero Grok <span>→</span></a><small class="install-note">Local beta · Chrome / Edge · No store listing required</small></div>
+    </section>
+  </main>
+
+  <footer class="footer shell"><div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.25"/><path d="M12 3.75v8.25l5.2 5.2"/></svg></span><span>ZERO GROK</span></div><p>See your AI usage before it hits zero.</p><span>© 2026 Zero Grok</span></footer>
+    <script src="script.js"></script>
+</body>
+</html>
