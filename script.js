@@ -33,6 +33,7 @@ setInterval(tick, 1000);
 const heroCan = document.getElementById('heroCan');
 const popBurst = document.getElementById('popBurst');
 let audioCtx = null;
+let hasPlayedOpenPop = false;
 
 function getAudio() {
   if (!audioCtx) {
@@ -110,32 +111,47 @@ function makeParticles() {
   popBurst.classList.add('active');
 }
 
-function popCan() {
+function popCan(fromAuto) {
   if (!heroCan) return;
   heroCan.classList.remove('pop');
   void heroCan.offsetWidth;
   heroCan.classList.add('pop');
   makeParticles();
   try { playPopSound(); } catch (_) {}
-  if (navigator.vibrate) {
+  if (!fromAuto && navigator.vibrate) {
     try { navigator.vibrate(14); } catch (_) {}
   }
+  hasPlayedOpenPop = true;
 }
 
-function unlockOnGesture() {
+function tryFirstOpenPop() {
+  if (hasPlayedOpenPop) return;
   getAudio();
-  document.removeEventListener('pointerdown', unlockOnGesture);
-  document.removeEventListener('keydown', unlockOnGesture);
+  setTimeout(() => {
+    if (hasPlayedOpenPop) return;
+    popCan(true);
+  }, 280);
 }
-document.addEventListener('pointerdown', unlockOnGesture, { once: true, passive: true });
-document.addEventListener('keydown', unlockOnGesture, { once: true });
+
+function unlockAndMaybeOpen(e) {
+  getAudio();
+  const onCan = heroCan && (e.target === heroCan || heroCan.contains(e.target));
+  if (!onCan) {
+    tryFirstOpenPop();
+  }
+  document.removeEventListener('pointerdown', unlockAndMaybeOpen);
+  document.removeEventListener('keydown', unlockAndMaybeOpen);
+}
+
+document.addEventListener('pointerdown', unlockAndMaybeOpen, { passive: true });
+document.addEventListener('keydown', unlockAndMaybeOpen);
 
 heroCan?.addEventListener('pointerdown', () => getAudio(), { passive: true });
-heroCan?.addEventListener('click', popCan);
+heroCan?.addEventListener('click', () => popCan(false));
 heroCan?.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault();
-    popCan();
+    popCan(false);
   }
 });
 
