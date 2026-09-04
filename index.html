@@ -33,7 +33,7 @@
           <a class="btn btn-primary" href="#download" id="installBtn">Download Zero Grok <span>→</span></a>
           <a class="btn btn-ghost" href="#demo">See it in action <span>↓</span></a>
         </div>
-        <div class="trust-row"><span>✓ Free &amp; SuperGrok</span><span>✓ Local-only data</span><span>✓ 4 AI providers</span></div><div class="local-beta"><span class="local-dot"></span><span>Local beta</span><span>·</span><span>Download the extension ZIP and load it unpacked</span></div>
+        <div class="trust-row"><span>✓ Free & SuperGrok</span><span>✓ Local-only data</span><span>✓ 4 AI providers</span></div><div class="local-beta"><span class="local-dot"></span><span>Local beta</span><span>·</span><span>Download the extension ZIP and load it unpacked</span></div>
       </div>
       <div class="hero-visual" id="demo">
         <div class="orb orb-a"></div><div class="orb orb-b"></div>
@@ -41,25 +41,19 @@
         <div class="can-scene" aria-label="Animated Zero Grok usage can">
           <div class="ring ring-1"></div><div class="ring ring-2"></div>
           <div class="can-shadow"></div>
-          <button class="can can-interactive" id="heroCan" type="button" aria-label="Interact with the Zero Grok can">
-            <div class="can-rim"></div>
-            <div class="can-top">
-              <div class="can-lid"></div>
-              <div class="can-tab"></div>
-              <div class="can-opening"></div>
-            </div>
-            <div class="can-body">
-              <div class="can-liquid" id="canLiquid"></div>
-              <div class="can-label">
-                <strong>ZERO</strong>
-                <small>GROK</small>
+          <button class="can can-interactive can-3d" id="heroCan" type="button" aria-label="Interact with the Zero Grok can">
+            <div class="can-3d-inner" id="can3d">
+              <div class="can-lid-3d">
+                <div class="can-lid-top"></div>
+                <div class="can-tab-3d"></div>
               </div>
-              <div class="can-highlight"></div>
-              <div class="can-ridge can-ridge-1"></div>
-              <div class="can-ridge can-ridge-2"></div>
-              <div class="bubble b1"></div><div class="bubble b2"></div><div class="bubble b3"></div><div class="bubble b4"></div>
+              <div class="can-cylinder">
+                <div class="can-face" style="--i:0"></div><div class="can-face" style="--i:1"></div><div class="can-face" style="--i:2"></div><div class="can-face" style="--i:3"></div><div class="can-face" style="--i:4"></div><div class="can-face" style="--i:5"></div><div class="can-face" style="--i:6"></div><div class="can-face" style="--i:7"></div><div class="can-face" style="--i:8"></div><div class="can-face" style="--i:9"></div><div class="can-face" style="--i:10"></div><div class="can-face" style="--i:11"></div><div class="can-face" style="--i:12"></div><div class="can-face" style="--i:13"></div><div class="can-face" style="--i:14"></div><div class="can-face" style="--i:15"></div>
+                <div class="can-label-3d"><strong>ZERO</strong><small>GROK</small></div>
+                <div class="can-liquid-3d" id="canLiquid"></div>
+              </div>
+              <div class="can-base-3d"></div>
             </div>
-            <div class="can-bottom"></div>
           </button>
           <div class="pop-burst" id="popBurst" aria-hidden="true"></div>
           <div class="usage-readout"><strong id="heroPercent">64%</strong><span>remaining</span></div>
@@ -101,7 +95,7 @@
     </section>
 
     <section class="showcase shell">
-      <div class="showcase-copy"><div class="section-kicker">BUILT FOR REAL WORK</div><h2>It stays out of your way.<br><em>Until it matters.</em></h2><p>Zero Grok is intentionally small. The floating can gives you one glanceable signal, while the popup gives you the full picture across your enabled AI accounts.</p><ul><li><span>01</span> Floating usage meter</li><li><span>02</span> Multi-provider overview</li><li><span>03</span> History &amp; export</li><li><span>04</span> Custom themes &amp; position</li></ul></div>
+      <div class="showcase-copy"><div class="section-kicker">BUILT FOR REAL WORK</div><h2>It stays out of your way.<br><em>Until it matters.</em></h2><p>Zero Grok is intentionally small. The floating can gives you one glanceable signal, while the popup gives you the full picture across your enabled AI accounts.</p><ul><li><span>01</span> Floating usage meter</li><li><span>02</span> Multi-provider overview</li><li><span>03</span> History & export</li><li><span>04</span> Custom themes & position</li></ul></div>
       <div class="popup-mock">
         <div class="mock-top"><b>Zero Grok</b><span>All AI usage at a glance</span><i>×</i></div>
         <div class="mock-card"><div><i class="dot grok"></i><b>Grok</b><strong>64%</strong></div><div class="mock-bar"><span style="width:64%"></span></div><small>Fast · 32 / 50 queries remaining</small></div>
@@ -131,7 +125,7 @@
     </section>
 
     <section class="cta shell" id="download">
-      <div class="cta-can"><div class="can small"><div class="can-rim"></div><div class="can-top"><div class="can-lid"></div><div class="can-tab"></div></div><div class="can-body"><div class="can-liquid" style="height:70%"></div><div class="can-label"><strong>ZERO</strong><small>GROK</small></div><div class="can-highlight"></div></div><div class="can-bottom"></div></div></div>
+      <div class="cta-can"><div class="can small can-3d"><div class="can-3d-inner"><div class="can-lid-3d"><div class="can-lid-top"></div></div><div class="can-cylinder"><div class="can-face" style="--i:0"></div><div class="can-face" style="--i:1"></div><div class="can-face" style="--i:2"></div><div class="can-face" style="--i:3"></div><div class="can-face" style="--i:4"></div><div class="can-face" style="--i:5"></div><div class="can-face" style="--i:6"></div><div class="can-face" style="--i:7"></div><div class="can-label-3d"><strong>ZERO</strong><small>GROK</small></div><div class="can-liquid-3d" style="height:70%"></div></div><div class="can-base-3d"></div></div></div></div>
       <div><div class="section-kicker">STOP GUESSING</div><h2>Know what you have<br><em>left.</em></h2><p>Install Zero Grok and make your AI limits visible in seconds.</p><a class="btn btn-primary" href="#" id="downloadBtn">Download Zero Grok <span>→</span></a><small class="install-note">Local beta · Chrome / Edge · No store listing required</small></div>
     </section>
   </main>
