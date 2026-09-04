@@ -6,7 +6,7 @@ Interactive soda-can usage meter with premium pop sound and animation.
 
 ## Live
 
-https://zero-grok-site.vercel.app
+https://zero-grok-landing.vercel.app
 
 ## Local
 
