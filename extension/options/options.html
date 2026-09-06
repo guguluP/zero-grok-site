@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Zero Grok Options</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 520px; margin: 40px auto; padding: 0 20px; color: #222; }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    h2 { font-size: 15px; margin: 28px 0 10px; color: #444; }
+    .desc { opacity: 0.7; margin-bottom: 20px; font-size: 13px; }
+    label { display: block; margin: 14px 0 6px; font-weight: 600; font-size: 13px; }
+    select, input[type="number"], input[type="text"] { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
+    .row { display: flex; gap: 10px; align-items: center; margin: 10px 0; }
+    .row label { margin: 0; font-weight: 500; }
+    button { margin-top: 8px; padding: 10px 18px; background: #c41e3a; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    button.secondary { background: #e9ecef; color: #333; margin-right: 8px; }
+    .saved { color: #27ae60; margin-left: 12px; opacity: 0; transition: opacity 0.3s; }
+    .link { display: inline-block; margin-top: 12px; font-size: 13px; color: #c41e3a; }
+    .sites { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .sites a {
+      display: inline-block; padding: 8px 12px; border-radius: 8px; background: #f1f3f5;
+      color: #222; text-decoration: none; font-size: 12px; font-weight: 600;
+    }
+    .sites a:hover { background: #e9ecef; }
+    .hint { font-size: 11px; opacity: 0.65; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Zero Grok Options</h1>
+  <p class="desc">Everything stays local. No data leaves your browser. Alt+U toggles the can.</p>
+
+  <h2>Appearance</h2>
+  <label for="position">Default can position (when not dragged)</label>
+  <select id="position">
+    <option value="bottom-right">Bottom right</option>
+    <option value="bottom-left">Bottom left</option>
+    <option value="top-right">Top right</option>
+    <option value="top-left">Top left</option>
+  </select>
+  <p class="hint">Drag the can anywhere — position is saved per site. Reset by clearing site data or re-saving position here after removing local override.</p>
+
+  <label for="theme">Theme</label>
+  <select id="theme">
+    <option value="auto">Auto (system)</option>
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+  </select>
+
+  <h2>Alerts &amp; badge</h2>
+  <label for="poll">Poll interval (minutes)</label>
+  <input type="number" id="poll" min="1" max="60" value="5" />
+
+  <label for="thresholds">Alert thresholds (% used, comma-separated)</label>
+  <input type="text" id="thresholds" value="70, 90, 100" />
+
+  <label for="badgeMode">Toolbar badge shows</label>
+  <select id="badgeMode">
+    <option value="lowest">Lowest remaining (all AIs)</option>
+    <option value="last">Last updated AI</option>
+  </select>
+
+  <div class="row"><input type="checkbox" id="badge" checked /><label for="badge">Show % on toolbar badge</label></div>
+  <div class="row"><input type="checkbox" id="sound" checked /><label for="sound">Can-pop on first use &amp; after refill</label></div>
+  <div class="row"><input type="checkbox" id="hideCan" /><label for="hideCan">Hide floating can</label></div>
+  <div class="row"><input type="checkbox" id="estimateMessages" /><label for="estimateMessages">Local message estimate when no live % (labeled, not official)</label></div>
+
+  <h2>Providers</h2>
+  <div class="row"><input type="checkbox" id="enableGrok" checked /><label for="enableGrok">Grok</label></div>
+  <div class="row"><input type="checkbox" id="enableClaude" checked /><label for="enableClaude">Claude</label></div>
+  <div class="row"><input type="checkbox" id="enableChatgpt" checked /><label for="enableChatgpt">ChatGPT</label></div>
+  <div class="row"><input type="checkbox" id="enableGemini" checked /><label for="enableGemini">Gemini</label></div>
+
+  <h2>Open AI sites</h2>
+  <div class="sites">
+    <a href="https://grok.com" target="_blank" rel="noopener">Grok</a>
+    <a href="https://claude.ai" target="_blank" rel="noopener">Claude</a>
+    <a href="https://chatgpt.com" target="_blank" rel="noopener">ChatGPT</a>
+    <a href="https://gemini.google.com" target="_blank" rel="noopener">Gemini</a>
+  </div>
+
+  <h2>Data</h2>
+  <button type="button" class="secondary" id="export">Export usage snapshot (JSON)</button>
+  <button type="button" class="secondary" id="clearHistory">Clear usage history</button>
+
+  <div style="margin-top:20px">
+    <button id="save">Save settings</button>
+    <span class="saved" id="saved">Saved ✓</span>
+  </div>
+
+  <p><a class="link" href="#" id="reopen-onboarding">Re-open introduction page</a></p>
+
+  <script src="options.js" type="module"></script>
+</body>
+</html>
