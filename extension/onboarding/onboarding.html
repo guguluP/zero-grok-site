@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Welcome to Zero Grok</title>
+  <link rel="stylesheet" href="onboarding.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo-can" aria-hidden="true">
+        <svg viewBox="0 0 64 128" width="48" height="96">
+          <defs>
+            <linearGradient id="m" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#2c2c2c"/><stop offset="40%" stop-color="#efefef"/>
+              <stop offset="100%" stop-color="#1e1e1e"/>
+            </linearGradient>
+            <linearGradient id="r" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#e31837"/><stop offset="100%" stop-color="#9b1020"/>
+            </linearGradient>
+          </defs>
+          <rect x="10" y="16" width="44" height="96" rx="6" fill="url(#m)"/>
+          <rect x="10" y="48" width="44" height="28" fill="url(#r)"/>
+          <text x="32" y="60" text-anchor="middle" fill="#fff" font-size="10" font-weight="900">ZERO</text>
+          <text x="32" y="71" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">GROK</text>
+        </svg>
+      </div>
+      <h1>Welcome to Zero Grok</h1>
+      <p class="tagline">Watch your AI usage drain like a Diet Coke can.<br/>Never get rate-limited by surprise.</p>
+    </header>
+
+    <section class="card">
+      <h2>What it does</h2>
+      <ul class="features">
+        <li><strong>Live remaining %</strong> on a floating soda can</li>
+        <li><strong>Grok</strong> — free rolling limits + SuperGrok weekly pool</li>
+        <li><strong>Claude</strong> — session & weekly usage (when available)</li>
+        <li><strong>ChatGPT</strong> — Plus/Team live % · Free best-effort</li>
+        <li><strong>Gemini</strong> — Free / Plus / Pro / Ultra from usage page</li>
+        <li>Click the can for details · badge shows lowest remaining %</li>
+        <li>Everything stays in your browser — no servers, no tracking</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>How it works</h2>
+      <ol class="steps">
+        <li>Open <strong>grok.com</strong>, <strong>claude.ai</strong>, <strong>chatgpt.com</strong>, or <strong>gemini.google.com</strong> while signed in.</li>
+        <li>The can appears automatically (bottom-right by default).</li>
+        <li>For free Grok: send one short message if numbers don’t show yet.</li>
+        <li>Claude, ChatGPT & Gemini use the same session cookies the site already has.</li>
+        <li>Click the can anytime for remaining count, reset hint, and refresh.</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>Customize</h2>
+      <div class="form-grid">
+        <label>
+          Can position
+          <select id="position">
+            <option value="bottom-right">Bottom right</option>
+            <option value="bottom-left">Bottom left</option>
+            <option value="top-right">Top right</option>
+            <option value="top-left">Top left</option>
+          </select>
+        </label>
+        <label>
+          Theme
+          <select id="theme">
+            <option value="auto">Auto (system)</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="badge" checked />
+          Show % on toolbar badge
+        </label>
+        <label class="check">
+          <input type="checkbox" id="sound" checked />
+          Can-pop on first use &amp; after refill (100% → available)
+        </label>
+        <label class="check">
+          <input type="checkbox" id="enableGrok" checked />
+          Enable Grok
+        </label>
+        <label class="check">
+          <input type="checkbox" id="enableClaude" checked />
+          Enable Claude
+        </label>
+        <label class="check">
+          <input type="checkbox" id="enableChatgpt" checked />
+          Enable ChatGPT
+        </label>
+        <label class="check">
+          <input type="checkbox" id="enableGemini" checked />
+          Enable Gemini
+        </label>
+      </div>
+    </section>
+
+    <section class="card tip">
+      <h2>Quick tip</h2>
+      <p>Free Grok uses the rate-limits API (no Settings page). Claude Pro/Max and Gemini usage pages are the most accurate. ChatGPT Free is best-effort until a limit banner appears. The can-pop plays on first show and again when a window refills after 100% used.</p>
+    </section>
+
+    <footer>
+      <button id="save" class="primary">Save & get started</button>
+      <button id="options" class="ghost">Open full options later</button>
+      <p class="fine">You can change these anytime from the extension Options page.</p>
+    </footer>
+  </div>
+  <script src="onboarding.js" type="module"></script>
+</body>
+</html>
