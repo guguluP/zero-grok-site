@@ -13,7 +13,7 @@ export const DEFAULT_SETTINGS = {
   hideCan: false,
   soundEnabled: true,
   badgeEnabled: true,
-  badgeMode: 'lowest', // 'lowest' | 'last'
+  badgeMode: 'lowest',
   pollIntervalMinutes: 5,
   enableGrok: true,
   enableClaude: true,
