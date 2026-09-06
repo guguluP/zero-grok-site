@@ -1,27 +1,32 @@
 # Zero Grok
 
-Landing + browser extension source for **Zero Grok** — know your AI limit before it hits zero.
+Diet Coke-style floating usage meter for **Grok**, **Claude**, **ChatGPT**, and **Gemini**.
 
-**Live:** [zero-grok-landing.vercel.app](https://zero-grok-landing.vercel.app/)
+## Download
 
-## Extension
+- **Latest ZIP (v1.4.2):** https://litter.catbox.moe/w6trqb.zip
+- **Source:** this repo (`extension/`)
+- **Landing:** https://zero-grok-landing.vercel.app
 
-The full Chromium extension lives under [`extension/`](./extension/).
+## Install
 
-- Manifest V3, multi-provider (Grok · Claude · ChatGPT · Gemini)
-- Floating can UI with bubbles, drag & save, refill countdown
-- Popup overview, options, onboarding
+1. Download and unzip
+2. Chrome → Extensions → Developer mode → **Load unpacked**
+3. Select the extracted folder
 
-### Install (local beta)
+## Gemini blank % fix (v1.4.2)
 
-1. Download [`downloads/zero-grok.zip`](./downloads/zero-grok.zip) from the site, **or** clone this repo.
-2. Unzip / open the folder that contains `manifest.json` (the `extension` folder if using the repo, or the root of the dedicated ZIP).
-3. Chrome → `chrome://extensions` → Developer mode → **Load unpacked**.
+- Live scrape when you are on `gemini.google.com/usage`
+- Stronger % parsers + progress bars
+- Network intercept for usage JSON
+- DNR rules to allow the usage iframe (strip X-Frame-Options)
+- **Tip:** open [gemini.google.com/usage](https://gemini.google.com/usage) once while signed in, then click Refresh on the can panel
 
-## Repo layout
+## Providers
 
-- `index.html` / `styles.css` / `script.js` — marketing landing
-- `extension/` — browser extension source
-- `downloads/zero-grok.zip` — packaged extension for one-click install (served by Vercel)
-
-© 2026 Zero Grok
+| Provider | Source |
+|----------|--------|
+| Grok | rate-limits + SuperGrok |
+| Claude | org usage API |
+| ChatGPT | session + settings scrape |
+| Gemini | usage page + live DOM + DNR iframe |
