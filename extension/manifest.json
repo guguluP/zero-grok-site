@@ -32,28 +32,14 @@
         "https://x.com/i/grok*",
         "https://x.com/grok*"
       ],
-      "js": [
-        "content/can-fx.js",
-        "content/can-ui.js",
-        "content/content.js"
-      ],
-      "css": [
-        "content/content.css"
-      ],
+      "js": ["content/can-fx.js", "content/can-ui.js", "content/content.js"],
+      "css": ["content/content.css"],
       "run_at": "document_idle"
     },
     {
-      "matches": [
-        "https://claude.ai/*"
-      ],
-      "js": [
-        "content/can-fx.js",
-        "content/can-ui.js",
-        "content/claude.js"
-      ],
-      "css": [
-        "content/content.css"
-      ],
+      "matches": ["https://claude.ai/*"],
+      "js": ["content/can-fx.js", "content/can-ui.js", "content/claude.js"],
+      "css": ["content/content.css"],
       "run_at": "document_idle"
     },
     {
@@ -61,28 +47,14 @@
         "https://chatgpt.com/*",
         "https://chat.openai.com/*"
       ],
-      "js": [
-        "content/can-fx.js",
-        "content/can-ui.js",
-        "content/chatgpt.js"
-      ],
-      "css": [
-        "content/content.css"
-      ],
+      "js": ["content/can-fx.js", "content/can-ui.js", "content/chatgpt.js"],
+      "css": ["content/content.css"],
       "run_at": "document_idle"
     },
     {
-      "matches": [
-        "https://gemini.google.com/*"
-      ],
-      "js": [
-        "content/can-fx.js",
-        "content/can-ui.js",
-        "content/gemini.js"
-      ],
-      "css": [
-        "content/content.css"
-      ],
+      "matches": ["https://gemini.google.com/*"],
+      "js": ["content/can-fx.js", "content/can-ui.js", "content/gemini.js"],
+      "css": ["content/content.css"],
       "run_at": "document_idle"
     }
   ],
@@ -106,10 +78,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": [
-        "assets/*",
-        "onboarding/*"
-      ],
+      "resources": ["assets/*", "onboarding/*"],
       "matches": [
         "https://grok.com/*",
         "https://claude.ai/*",
@@ -120,6 +89,12 @@
       ]
     }
   ],
+  "commands": {
+    "toggle-can": {
+      "suggested_key": { "default": "Alt+U" },
+      "description": "Show or hide the Zero Grok can"
+    }
+  },
   "browser_specific_settings": {
     "gecko": {
       "id": "zero-grok@xai-community",
@@ -127,14 +102,6 @@
     },
     "safari": {
       "strict_min_version": "15.4"
-    }
-  },
-  "commands": {
-    "toggle-can": {
-      "suggested_key": {
-        "default": "Alt+U"
-      },
-      "description": "Show or hide the Zero Grok can"
     }
   }
 }
