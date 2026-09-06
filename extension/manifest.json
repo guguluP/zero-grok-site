@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Zero Grok",
-  "version": "1.4.1",
-  "description": "Diet Coke can for Grok, Claude, ChatGPT & Gemini — bubbles, refill countdown, multi-provider popup, drag & save.",
+  "version": "1.4.2",
+  "description": "Diet Coke can for Grok, Claude, ChatGPT & Gemini \u2014 bubbles, refill countdown, multi-provider popup, drag & save.",
   "permissions": [
     "storage",
     "alarms",
@@ -23,6 +23,15 @@
   "background": {
     "service_worker": "background.js",
     "type": "module"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "gemini_frame",
+        "enabled": true,
+        "path": "rules/gemini-dnr.json"
+      }
+    ]
   },
   "content_scripts": [
     {
@@ -93,7 +102,7 @@
       "48": "assets/icons/icon48.png",
       "128": "assets/icons/icon128.png"
     },
-    "default_title": "Zero Grok – Usage"
+    "default_title": "Zero Grok \u2013 Usage"
   },
   "options_ui": {
     "page": "options/options.html",
