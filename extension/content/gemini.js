@@ -2,9 +2,10 @@
  * Zero Grok – Gemini (Free / AI Plus / Pro / Ultra)
  *
  * Data source: gemini.google.com/usage
- *   - Primary: fetch HTML + parse "% used" for current (5h) + weekly
- *   - Fallback: same-origin hidden iframe (needs DNR to strip XFO/CSP)
- *   - Last resort: on-page limit banners
+ *   - Live page scrape when on /usage (best)
+ *   - Fetch HTML + iframe (DNR strips XFO)
+ *   - Network intercept for usage JSON
+ *   - On-page limit banners
  *
  * Gemini reports USED percent; we convert to remaining for the can.
  */
@@ -12,7 +13,6 @@
   'use strict';
   if (window.__ZERO_GROK_GEMINI__) return;
   window.__ZERO_GROK_GEMINI__ = true;
-  // Only top frame (not the usage iframe we inject)
   if (window.self !== window.top) return;
 
   let currentUsage = null;
@@ -23,51 +23,13 @@
   let iframeEl = null;
   let iframePoll = null;
 
-  function hasPlayedPop() {
-    try { return localStorage.getItem('zeroGrokPopPlayed_gemini') === '1'; } catch (_) { return false; }
-  }
-  function markPopPlayed() {
-    try { localStorage.setItem('zeroGrokPopPlayed_gemini', '1'); } catch (_) {}
-  }
   function playCanPopSound() {
     try {
       const url = chrome.runtime.getURL('assets/sounds/can-pop.wav');
       const audio = new Audio(url);
       audio.volume = 0.55;
-      audio.play().catch(() => synthesizePop());
-    } catch (_) { synthesizePop(); }
-  }
-  function synthesizePop() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const t0 = ctx.currentTime;
-      const o1 = ctx.createOscillator();
-      const g1 = ctx.createGain();
-      o1.type = 'sine';
-      o1.frequency.setValueAtTime(110, t0);
-      o1.frequency.exponentialRampToValueAtTime(45, t0 + 0.18);
-      g1.gain.setValueAtTime(0.5, t0);
-      g1.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
-      o1.connect(g1); g1.connect(ctx.destination);
-      o1.start(t0); o1.stop(t0 + 0.25);
+      audio.play().catch(() => {});
     } catch (_) {}
-  }
-  function spawnFizz(originEl) {
-    if (!originEl) return;
-    const rect = originEl.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height * 0.3;
-    for (let i = 0; i < 12; i++) {
-      const p = document.createElement('div');
-      p.className = 'zg-fizz-particle';
-      const angle = (Math.PI * 2 * i) / 12;
-      const dist = 30 + Math.random() * 30;
-      p.style.left = cx + 'px'; p.style.top = cy + 'px';
-      p.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
-      p.style.setProperty('--ty', Math.sin(angle) * dist - 15 + 'px');
-      p.style.background = i % 2 ? '#4285f4' : '#fff';
-      document.body.appendChild(p);
-      setTimeout(() => p.remove(), 800);
-    }
   }
 
   function loadSettings() {
@@ -75,7 +37,6 @@
       chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (res) => {
         if (res) settings = { ...settings, ...res };
         if (settings.enableGemini === false) return;
-        applyTheme();
         if (settings.hideCan) return;
         showCan();
         updateCanVisual(null);
@@ -84,12 +45,6 @@
       showCan();
       updateCanVisual(null);
     }
-  }
-
-  function applyTheme() {
-    const dark = settings.theme === 'dark' ||
-      (settings.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    document.documentElement.classList.toggle('zg-dark', dark);
   }
 
   function createCan() {
@@ -103,7 +58,6 @@
       });
       return canEl;
     }
-    // Fallback minimal can if can-ui missing
     canEl = document.createElement('div');
     canEl.id = 'zero-grok-can';
     canEl.innerHTML = '<div class="zg-can-body"><div class="zg-percent" id="zg-percent">--%</div></div>';
@@ -114,16 +68,6 @@
   }
 
   function showCan() { createCan(); canEl.style.display = 'flex'; }
-
-  function setLiquidColor(rem) {
-    const liquid = canEl?.querySelector('.zg-liquid');
-    if (!liquid) return;
-    liquid.classList.remove('zg-ok', 'zg-warn', 'zg-critical');
-    if (rem == null) liquid.style.fill = '#666';
-    else if (rem <= 10) { liquid.classList.add('zg-critical'); liquid.style.fill = '#e74c3c'; }
-    else if (rem <= 30) { liquid.classList.add('zg-warn'); liquid.style.fill = '#f39c12'; }
-    else { liquid.classList.add('zg-ok'); liquid.style.fill = '#27ae60'; }
-  }
 
   function updateCanVisual(data) {
     if (!canEl) return;
@@ -137,26 +81,16 @@
       }
       return;
     }
-    const liquidRect = canEl.querySelector('#zg-liquid-rect');
     const percentEl = canEl.querySelector('#zg-percent');
-    const fullH = 88;
-    const h = (rem == null || !Number.isFinite(rem)) ? 0 : (rem / 100) * fullH;
-    if (liquidRect) {
-      liquidRect.setAttribute('y', 20 + (fullH - h));
-      liquidRect.setAttribute('height', Math.max(0, h));
-    }
     if (percentEl) {
       if (rem == null || !Number.isFinite(rem)) {
         percentEl.textContent = '--%';
-        percentEl.className = 'zg-percent';
         percentEl.style.color = '#888';
       } else {
-        percentEl.textContent = `${Math.round(rem)}%`;
-        percentEl.className = 'zg-percent ' + (rem <= 10 ? 'zg-critical' : rem <= 30 ? 'zg-warn' : 'zg-ok');
+        percentEl.textContent = Math.round(rem) + '%';
         percentEl.style.color = '';
       }
     }
-    setLiquidColor(rem == null || !Number.isFinite(rem) ? null : rem);
   }
 
   function createPanel() {
@@ -174,10 +108,12 @@
           <div id="zg-weekly-label">Weekly</div>
           <div class="zg-bar-wrap" style="margin-top:4px"><div class="zg-bar" id="zg-weekly-bar" style="background:#4285f4"></div></div>
         </div>
-        <div class="zg-footer"><button id="zg-refresh">Refresh</button></div>
+        <div class="zg-footer"><button id="zg-refresh">Refresh</button>
+        <button id="zg-open-usage" style="margin-left:6px">Open /usage</button></div>
       </div>`;
     panelEl.querySelector('.zg-close').onclick = () => { isExpanded = false; panelEl.classList.remove('zg-open'); };
     panelEl.querySelector('#zg-refresh').onclick = () => scrape();
+    panelEl.querySelector('#zg-open-usage').onclick = () => { window.open('https://gemini.google.com/usage', '_blank'); };
     document.body.appendChild(panelEl);
     return panelEl;
   }
@@ -190,10 +126,9 @@
   }
 
   const STATUS_MESSAGES = {
-    'signed-out': 'Sign in to Gemini, then Refresh',
+    'signed-out': 'Sign in to Gemini, then open /usage once',
     'no-data': 'Open gemini.google.com/usage once, then Refresh',
-    'free-hint': 'If bars missing, Google may not expose % for this account yet',
-    'unavailable': 'Usage page not available yet — try a chat first'
+    'unavailable': 'Usage not available yet — open /usage or try a chat first'
   };
   let lastStatus = 'signed-out';
 
@@ -208,23 +143,23 @@
     const weeklyBar = panelEl.querySelector('#zg-weekly-bar');
     const weeklyLabel = panelEl.querySelector('#zg-weekly-label');
 
-    if (big) big.textContent = (rem == null || !Number.isFinite(rem)) ? '--%' : `${Math.round(rem)}%`;
+    if (big) big.textContent = (rem == null || !Number.isFinite(rem)) ? '--%' : Math.round(rem) + '%';
     if (label) label.textContent = data?.windowHint || 'remaining';
     if (bar) {
-      bar.style.width = (rem == null || !Number.isFinite(rem)) ? '0%' : `${rem}%`;
+      bar.style.width = (rem == null || !Number.isFinite(rem)) ? '0%' : rem + '%';
       bar.className = 'zg-bar ' + ((rem == null || !Number.isFinite(rem)) ? '' : rem <= 10 ? 'zg-critical' : rem <= 30 ? 'zg-warn' : 'zg-ok');
     }
     if (reset) {
       reset.textContent = !data
-        ? (STATUS_MESSAGES[lastStatus] || 'Sign in to Gemini, then Refresh')
-        : [data.windowHint, data.resetHint].filter(Boolean).join(' · ');
+        ? (STATUS_MESSAGES[lastStatus] || STATUS_MESSAGES['no-data'])
+        : [data.windowHint, data.resetHint, data.source].filter(Boolean).join(' · ');
     }
     if (weeklyRow && weeklyBar && weeklyLabel) {
       if (data && Number.isFinite(data.weeklyRemaining)) {
         weeklyRow.style.display = 'block';
-        weeklyBar.style.width = `${data.weeklyRemaining}%`;
-        weeklyLabel.textContent = `Weekly ${Math.round(data.weeklyRemaining)}% left` +
-          (data.weeklyResetHint ? ` · ${data.weeklyResetHint}` : '');
+        weeklyBar.style.width = data.weeklyRemaining + '%';
+        weeklyLabel.textContent = 'Weekly ' + Math.round(data.weeklyRemaining) + '% left' +
+          (data.weeklyResetHint ? ' · ' + data.weeklyResetHint : '');
       } else {
         weeklyRow.style.display = 'none';
       }
@@ -264,83 +199,70 @@
         }
       }
     } catch (_) {}
-
     try { chrome.runtime.sendMessage({ type: 'USAGE_DATA', payload: data }); } catch (_) {}
     console.log('[Zero Grok] Gemini OK', Math.round(data.remainingPercent) + '%', data.windowHint, 'via', data.source);
   }
 
-  /** Parse Gemini usage page DOM (current = 5h, weekly = 7d). Values are % USED. */
   function extractFromDocument(doc) {
     if (!doc) return null;
-
-    let currentUsed = null;
-    let currentReset = '';
-    let weeklyUsed = null;
-    let weeklyReset = '';
+    let currentUsed = null, currentReset = '', weeklyUsed = null, weeklyReset = '';
 
     const currentEl =
       doc.querySelector('[data-test-id="gxu-currently"]') ||
       doc.querySelector('.gxu-currently') ||
-      doc.querySelector('[data-test-id*="current"]');
+      doc.querySelector('[data-test-id*="current"]') ||
+      doc.querySelector('[class*="currently"]');
     const weeklyEl =
       doc.querySelector('[data-test-id="gxu-weekly"]') ||
       doc.querySelector('.gxu-weekly') ||
-      doc.querySelector('[data-test-id*="weekly"]');
+      doc.querySelector('[data-test-id*="weekly"]') ||
+      doc.querySelector('[class*="weekly"]');
 
     function readBlock(el, assignUsed, assignReset) {
       if (!el) return;
-      const texts = Array.from(el.querySelectorAll('p, div, span, h1, h2, h3'))
-        .map(n => (n.textContent || '').trim())
-        .filter(Boolean);
+      const texts = Array.from(el.querySelectorAll('p, div, span, h1, h2, h3, li, label'))
+        .map(n => (n.textContent || '').trim()).filter(Boolean);
       for (const text of texts) {
-        const m = text.match(/(\d{1,3})\s*%\s*(?:used|used up)?/i) || text.match(/(\d{1,3})\s*%/);
+        const m = text.match(/(\d{1,3})\s*%\s*(?:used|used up)?/i) ||
+                  text.match(/(?:used|usage)\s*[:=]?\s*(\d{1,3})\s*%/i) ||
+                  text.match(/(\d{1,3})\s*%/);
         if (m && assignUsed.value == null) {
           const v = parseInt(m[1], 10);
           if (v >= 0 && v <= 100) assignUsed.value = v;
         }
-        if (/reset/i.test(text) && !assignReset.value) assignReset.value = text;
+        if (/reset|resets|refill|available again/i.test(text) && !assignReset.value) assignReset.value = text.slice(0, 80);
       }
     }
 
-    const cur = { value: null };
-    const curR = { value: '' };
-    const wk = { value: null };
-    const wkR = { value: '' };
+    const cur = { value: null }, curR = { value: '' }, wk = { value: null }, wkR = { value: '' };
     readBlock(currentEl, cur, curR);
     readBlock(weeklyEl, wk, wkR);
-    currentUsed = cur.value;
-    currentReset = curR.value;
-    weeklyUsed = wk.value;
-    weeklyReset = wkR.value;
+    currentUsed = cur.value; currentReset = curR.value;
+    weeklyUsed = wk.value; weeklyReset = wkR.value;
 
-    // Text fallback across the page
     if (currentUsed == null || weeklyUsed == null) {
-      const bodyText = doc.body?.innerText || '';
+      const bodyText = doc.body?.innerText || doc.documentElement?.innerText || '';
       const chunks = bodyText.split(/\n+/).map(s => s.trim()).filter(Boolean);
-
       for (let i = 0; i < chunks.length; i++) {
         const line = chunks[i];
-        const pct = line.match(/(\d{1,3})\s*%/);
+        const pct = line.match(/(\d{1,3})\s*%\s*(?:used|used up)?/i) ||
+                    line.match(/(?:used|usage)\s*[:=]?\s*(\d{1,3})\s*%/i) ||
+                    line.match(/(\d{1,3})\s*%/);
         if (!pct) continue;
         const val = parseInt(pct[1], 10);
         if (val < 0 || val > 100) continue;
-
-        const context = (chunks[i - 1] || '') + ' ' + line + ' ' + (chunks[i + 1] || '');
-        const lower = context.toLowerCase();
-        const isWeekly = /week|weekly|7[\s-]?day/.test(lower);
-        const isCurrent = /current|session|5[\s-]?hour|rolling|today|now/.test(lower) || !isWeekly;
-
+        const context = ((chunks[i - 1] || '') + ' ' + line + ' ' + (chunks[i + 1] || '')).toLowerCase();
+        const isWeekly = /week|weekly|7[\s-]?day/.test(context);
+        const isCurrent = /current|session|5[\s-]?hour|rolling|today|now|prompt|model/.test(context) || !isWeekly;
         if (isWeekly && weeklyUsed == null) weeklyUsed = val;
         else if (isCurrent && currentUsed == null) currentUsed = val;
-
-        if (/reset/i.test(line)) {
-          if (isWeekly && !weeklyReset) weeklyReset = line;
-          else if (!currentReset) currentReset = line;
+        if (/reset|resets|refill/i.test(line)) {
+          if (isWeekly && !weeklyReset) weeklyReset = line.slice(0, 80);
+          else if (!currentReset) currentReset = line.slice(0, 80);
         }
       }
     }
 
-    // Progress-bar aria / style width as last resort
     if (currentUsed == null && weeklyUsed == null) {
       const bars = doc.querySelectorAll('[role="progressbar"], progress, [aria-valuenow]');
       for (const bar of bars) {
@@ -351,7 +273,7 @@
           if (m) v = parseFloat(m[1]);
         }
         if (!Number.isFinite(v) || v < 0 || v > 100) continue;
-        const parentText = (bar.closest('section,div,article')?.textContent || '').toLowerCase();
+        const parentText = (bar.closest('section,div,article,li')?.textContent || '').toLowerCase();
         if (/week|weekly/.test(parentText) && weeklyUsed == null) weeklyUsed = Math.round(v);
         else if (currentUsed == null) currentUsed = Math.round(v);
       }
@@ -359,34 +281,18 @@
 
     if (currentUsed == null && weeklyUsed == null) return null;
 
-    // Prefer the tighter window for the can (higher used %)
     const buckets = [];
-    if (currentUsed != null) {
-      buckets.push({
-        used: currentUsed,
-        remaining: Math.max(0, 100 - currentUsed),
-        hint: '5-hour session',
-        reset: currentReset
-      });
-    }
-    if (weeklyUsed != null) {
-      buckets.push({
-        used: weeklyUsed,
-        remaining: Math.max(0, 100 - weeklyUsed),
-        hint: 'Weekly',
-        reset: weeklyReset
-      });
-    }
+    if (currentUsed != null) buckets.push({ used: currentUsed, remaining: Math.max(0, 100 - currentUsed), hint: '5-hour session', reset: currentReset });
+    if (weeklyUsed != null) buckets.push({ used: weeklyUsed, remaining: Math.max(0, 100 - weeklyUsed), hint: 'Weekly', reset: weeklyReset });
     buckets.sort((a, b) => b.used - a.used);
     const top = buckets[0];
-
     return {
       provider: 'gemini',
       usedPercent: top.used,
       remainingPercent: top.remaining,
       windowHint: top.hint,
       resetHint: top.reset || '',
-      weeklyUsed: weeklyUsed,
+      weeklyUsed,
       weeklyRemaining: weeklyUsed != null ? Math.max(0, 100 - weeklyUsed) : null,
       weeklyResetHint: weeklyReset || '',
       source: 'usage-page'
@@ -395,19 +301,25 @@
 
   function scrapeDomLimit() {
     const text = document.body?.innerText || '';
-    const limitMatch = text.match(
-      /you(?:'ve| have)?\s+(?:reached|hit)\s+(?:your\s+)?(?:usage\s+)?limit[^.]{0,120}/i
-    ) || text.match(/usage\s+limit\s+(?:reached|exceeded)/i);
+    const limitMatch = text.match(/you(?:'ve| have)?\s+(?:reached|hit)\s+(?:your\s+)?(?:usage\s+)?limit[^.]{0,120}/i) ||
+                      text.match(/usage\s+limit\s+(?:reached|exceeded)/i);
     if (!limitMatch) return null;
     const until = limitMatch[0].match(/(?:until|after|in|at)\s+([^.!?\n]{3,60})/i);
     return {
-      provider: 'gemini',
-      usedPercent: 100,
-      remainingPercent: 0,
-      windowHint: 'Limit reached',
-      resetHint: until ? until[1].trim() : 'Wait for reset',
-      source: 'dom-limit'
+      provider: 'gemini', usedPercent: 100, remainingPercent: 0,
+      windowHint: 'Limit reached', resetHint: until ? until[1].trim() : 'Wait for reset', source: 'dom-limit'
     };
+  }
+
+  function scrapeLivePage() {
+    try {
+      const data = extractFromDocument(document);
+      if (data) {
+        data.source = location.pathname.includes('/usage') ? 'live-page' : 'live-dom';
+        return data;
+      }
+    } catch (_) {}
+    return null;
   }
 
   function ensureIframe() {
@@ -416,10 +328,7 @@
     iframeEl.id = 'zero-grok-gemini-usage-iframe';
     iframeEl.src = 'https://gemini.google.com/usage';
     iframeEl.setAttribute('aria-hidden', 'true');
-    Object.assign(iframeEl.style, {
-      position: 'fixed', width: '0', height: '0', border: 'none',
-      opacity: '0', pointerEvents: 'none', left: '-9999px', top: '0'
-    });
+    Object.assign(iframeEl.style, { position: 'fixed', width: '1px', height: '1px', border: 'none', opacity: '0', pointerEvents: 'none', left: '-9999px', top: '0' });
     document.body.appendChild(iframeEl);
     return iframeEl;
   }
@@ -435,57 +344,36 @@
         try {
           const doc = iframe.contentDocument || iframe.contentWindow?.document;
           if (!doc) {
-            if (attempts >= 25) {
-              clearInterval(iframePoll);
-              iframePoll = null;
-              resolve(null);
-            }
+            if (attempts >= 30) { clearInterval(iframePoll); iframePoll = null; resolve(null); }
             return;
           }
           const title = (doc.title || '').toLowerCase();
           if (title.includes('sign in') || title.includes('login')) {
-            clearInterval(iframePoll);
-            iframePoll = null;
-            resolve(null);
-            return;
+            clearInterval(iframePoll); iframePoll = null; resolve(null); return;
           }
           const data = extractFromDocument(doc);
           if (data) {
             data.source = 'usage-iframe';
-            clearInterval(iframePoll);
-            iframePoll = null;
-            resolve(data);
-            return;
+            clearInterval(iframePoll); iframePoll = null; resolve(data); return;
           }
         } catch (_) {
-          // cross-origin redirect to accounts.google.com
-          if (attempts >= 8) {
-            clearInterval(iframePoll);
-            iframePoll = null;
-            resolve(null);
-          }
+          if (attempts >= 10) { clearInterval(iframePoll); iframePoll = null; resolve(null); }
         }
-        if (attempts >= 25) {
-          clearInterval(iframePoll);
-          iframePoll = null;
-          resolve(null);
-        }
-      }, 400);
+        if (attempts >= 30) { clearInterval(iframePoll); iframePoll = null; resolve(null); }
+      }, 500);
     });
   }
 
   async function scrapeViaFetch() {
     try {
       const res = await fetch('https://gemini.google.com/usage?t=' + Date.now(), {
-        credentials: 'include',
-        cache: 'no-store'
+        credentials: 'include', cache: 'no-store',
+        headers: { Accept: 'text/html,application/xhtml+xml' }
       });
       if (res.status === 401 || res.status === 403) return { auth: true };
       if (!res.ok) return null;
       const html = await res.text();
-      if (/accounts\.google\.com|Sign in/i.test(html) && !/%\s*used/i.test(html)) {
-        return { auth: true };
-      }
+      if (/accounts\.google\.com|ServiceLogin|Sign in/i.test(html) && !/\d{1,3}\s*%/i.test(html)) return { auth: true };
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const data = extractFromDocument(doc);
       if (data) data.source = 'usage-fetch';
@@ -496,54 +384,90 @@
     }
   }
 
+  function installNetworkHook() {
+    try {
+      const origFetch = window.fetch;
+      window.fetch = async function (...args) {
+        const response = await origFetch.apply(this, args);
+        try {
+          const url = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || '';
+          if (/usage|quota|limit|rate|billing|capacity/i.test(url) && response.ok) {
+            const clone = response.clone();
+            const ct = (clone.headers.get('content-type') || '').toLowerCase();
+            if (ct.includes('json')) {
+              clone.json().then((json) => {
+                const data = normalizeUsageJson(json);
+                if (data) applyUsage(data, 'ok');
+              }).catch(() => {});
+            }
+          }
+        } catch (_) {}
+        return response;
+      };
+    } catch (_) {}
+  }
+
+  function normalizeUsageJson(json) {
+    if (!json || typeof json !== 'object') return null;
+    const stack = [json];
+    let used = null, remaining = null;
+    while (stack.length) {
+      const node = stack.pop();
+      if (!node || typeof node !== 'object') continue;
+      for (const [k, v] of Object.entries(node)) {
+        const key = k.toLowerCase();
+        if (typeof v === 'number' && Number.isFinite(v)) {
+          if (/usedpercent|percentused|utilization|usagepercent/.test(key) && v >= 0 && v <= 100) used = v;
+          if (/remainingpercent|percentremaining/.test(key) && v >= 0 && v <= 100) remaining = v;
+        } else if (v && typeof v === 'object') stack.push(v);
+      }
+    }
+    if (remaining == null && used != null) remaining = Math.max(0, 100 - used);
+    if (remaining == null || !Number.isFinite(remaining)) return null;
+    return {
+      provider: 'gemini',
+      usedPercent: used != null ? used : Math.max(0, 100 - remaining),
+      remainingPercent: remaining,
+      windowHint: 'Live', resetHint: '', source: 'network-json'
+    };
+  }
+
+  function watchUsageDom() {
+    let timer = null;
+    const tick = () => {
+      const data = scrapeLivePage() || scrapeDomLimit();
+      if (data && Number.isFinite(data.remainingPercent)) applyUsage(data, 'ok');
+    };
+    const mo = new MutationObserver(() => { clearTimeout(timer); timer = setTimeout(tick, 600); });
+    if (document.body) mo.observe(document.body, { childList: true, subtree: true, characterData: true });
+    setInterval(() => { if (location.pathname.includes('/usage')) tick(); }, 15000);
+  }
+
   async function scrape() {
     console.log('[Zero Grok] Gemini scrape…');
-
-    // 1) Fast path: fetch usage page HTML
-    let data = await scrapeViaFetch();
-    if (data && data.auth) {
-      applyUsage(null, 'signed-out');
-      return;
-    }
-    if (data && Number.isFinite(data.remainingPercent)) {
-      applyUsage(data, 'ok');
-      return;
-    }
-
-    // 2) Iframe (SPA-rendered usage page)
+    let data = scrapeLivePage();
+    if (data && Number.isFinite(data.remainingPercent)) { applyUsage(data, 'ok'); return; }
+    data = await scrapeViaFetch();
+    if (data && data.auth) { applyUsage(null, 'signed-out'); return; }
+    if (data && Number.isFinite(data.remainingPercent)) { applyUsage(data, 'ok'); return; }
     console.log('[Zero Grok] Gemini trying iframe fallback…');
     data = await scrapeViaIframe();
-    if (data && Number.isFinite(data.remainingPercent)) {
-      applyUsage(data, 'ok');
-      return;
-    }
-
-    // 3) On-page limit banner
+    if (data && Number.isFinite(data.remainingPercent)) { applyUsage(data, 'ok'); return; }
     data = scrapeDomLimit();
-    if (data) {
-      applyUsage(data, 'ok');
-      return;
-    }
-
+    if (data) { applyUsage(data, 'ok'); return; }
     applyUsage(null, currentUsage ? 'unavailable' : 'no-data');
   }
 
-  // Refresh after generation finishes (send ↔ stop button transitions)
   function watchGeneration() {
     let wasGenerating = false;
     const check = () => {
-      const stop =
-        document.querySelector('button[aria-label*="Stop" i]') ||
-        document.querySelector('button[aria-label*="stop generating" i]') ||
-        document.querySelector('[data-test-id*="stop"]');
+      const stop = document.querySelector('button[aria-label*="Stop" i]') ||
+                   document.querySelector('button[aria-label*="stop generating" i]');
       const generating = !!stop;
-      if (wasGenerating && !generating) {
-        setTimeout(scrape, 1200);
-      }
+      if (wasGenerating && !generating) setTimeout(scrape, 1200);
       wasGenerating = generating;
     };
-    const mo = new MutationObserver(check);
-    mo.observe(document.body, { childList: true, subtree: true });
+    if (document.body) new MutationObserver(check).observe(document.body, { childList: true, subtree: true });
     setInterval(check, 2000);
   }
 
@@ -558,10 +482,12 @@
     }
   });
 
+  installNetworkHook();
+  watchUsageDom();
   loadSettings();
   setTimeout(scrape, 1800);
   setTimeout(scrape, 6000);
   setInterval(scrape, 90_000);
   watchGeneration();
-  console.log('[Zero Grok] Gemini ready (usage page scrape)');
+  console.log('[Zero Grok] Gemini ready (live + fetch + iframe + intercept)');
 })();
