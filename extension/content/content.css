@@ -1,0 +1,260 @@
+/* Zero Grok – Diet Coke style floating can + panel */
+
+#zero-grok-can {
+  position: fixed;
+  z-index: 2147483646;
+  width: 72px;
+  height: 150px;
+  cursor: grab;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+  touch-action: none;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.35));
+  transition: transform 0.15s ease;
+}
+#zero-grok-can:active { cursor: grabbing; }
+#zero-grok-can.dragging { transition: none; }
+#zero-grok-can.hidden { display: none !important; }
+
+#zero-grok-can .can-body {
+  width: 56px;
+  height: 110px;
+  background: linear-gradient(180deg, #e8e8e8 0%, #c0c0c0 8%, #a8a8a8 12%, #909090 20%, #787878 100%);
+  border-radius: 8px 8px 12px 12px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #555;
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.2);
+}
+
+#zero-grok-can .can-top {
+  width: 48px;
+  height: 14px;
+  background: linear-gradient(180deg, #d0d0d0, #a0a0a0);
+  border-radius: 50% / 40%;
+  margin-bottom: -2px;
+  border: 1px solid #666;
+  position: relative;
+  z-index: 2;
+}
+
+#zero-grok-can .can-tab {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 8px;
+  background: #888;
+  border-radius: 2px;
+  border: 1px solid #555;
+}
+
+#zero-grok-can .liquid {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, #2d5a27 0%, #1a3d18 40%, #0f280e 100%);
+  transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+#zero-grok-can .liquid::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -10%;
+  right: -10%;
+  height: 12px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 50%;
+  animation: wave 2s ease-in-out infinite;
+}
+
+@keyframes wave {
+  0%, 100% { transform: translateX(0) scaleY(1); }
+  50% { transform: translateX(5%) scaleY(1.2); }
+}
+
+#zero-grok-can .bubbles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+#zero-grok-can .bubble {
+  position: absolute;
+  bottom: 5%;
+  width: 6px;
+  height: 6px;
+  background: rgba(255,255,255,0.45);
+  border-radius: 50%;
+  animation: rise 3s ease-in infinite;
+}
+
+@keyframes rise {
+  0% { transform: translateY(0) scale(1); opacity: 0.6; }
+  100% { transform: translateY(-100px) scale(0.3); opacity: 0; }
+}
+
+#zero-grok-can .label {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  text-align: center;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  line-height: 1.15;
+  pointer-events: none;
+  z-index: 3;
+}
+
+#zero-grok-can .pct {
+  position: absolute;
+  bottom: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  z-index: 3;
+  pointer-events: none;
+}
+
+#zero-grok-can .refill-countdown {
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(0,0,0,0.7);
+  padding: 2px 6px;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+#zero-grok-panel {
+  position: fixed;
+  z-index: 2147483645;
+  width: 220px;
+  background: rgba(20, 20, 24, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: #eee;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  display: none;
+}
+
+#zero-grok-panel.visible { display: block; }
+
+#zero-grok-panel .panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+#zero-grok-panel .panel-title {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+#zero-grok-panel .panel-close {
+  background: none;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+#zero-grok-panel .bar-row {
+  margin: 6px 0;
+}
+
+#zero-grok-panel .bar-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3px;
+  font-size: 11px;
+  color: #ccc;
+}
+
+#zero-grok-panel .bar-track {
+  height: 8px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+#zero-grok-panel .bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+  background: linear-gradient(90deg, #4ade80, #22c55e);
+}
+
+#zero-grok-panel .bar-fill.low { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+#zero-grok-panel .bar-fill.critical { background: linear-gradient(90deg, #f87171, #ef4444); }
+
+#zero-grok-panel .meta {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #999;
+  line-height: 1.4;
+}
+
+#zero-grok-panel .actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+#zero-grok-panel button {
+  flex: 1;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255,255,255,0.1);
+  color: #eee;
+}
+
+#zero-grok-panel button:hover { background: rgba(255,255,255,0.18); }
+
+#zero-grok-panel .provider-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.provider-grok { background: #1a1a1a; color: #fff; }
+.provider-claude { background: #d97706; color: #fff; }
+.provider-chatgpt { background: #10a37f; color: #fff; }
+.provider-gemini { background: #4285f4; color: #fff; }
