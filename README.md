@@ -2,30 +2,34 @@
 
 Diet Coke-style floating usage meter for **Grok**, **Claude**, **ChatGPT**, and **Gemini**.
 
-## Download
+## Download (v1.4.2)
 
-- **Latest ZIP (v1.4.2):** https://litter.catbox.moe/w6trqb.zip
-- **Source:** this repo (`extension/`)
-- **Landing:** https://zero-grok-landing.vercel.app
+**ZIP:** https://litter.catbox.moe/zzo66p.zip  
+**Source:** this repo (`extension/`)  
+**Landing:** https://zero-grok-landing.vercel.app
 
 ## Install
 
-1. Download and unzip
-2. Chrome → Extensions → Developer mode → **Load unpacked**
+1. Download and unzip  
+2. Chrome → Extensions → Developer mode → **Load unpacked**  
 3. Select the extracted folder
 
-## Gemini blank % fix (v1.4.2)
+## Gemini blank % (fixed in 1.4.2)
 
-- Live scrape when you are on `gemini.google.com/usage`
-- Stronger % parsers + progress bars
+1. Reload the extension after updating  
+2. Open https://gemini.google.com/usage while signed in  
+3. Click **Refresh** on the can panel (or wait a few seconds)
+
+The can now uses:
+- Live DOM scrape on `/usage`
+- Stronger % / progress-bar parsers
 - Network intercept for usage JSON
-- DNR rules to allow the usage iframe (strip X-Frame-Options)
-- **Tip:** open [gemini.google.com/usage](https://gemini.google.com/usage) once while signed in, then click Refresh on the can panel
+- DNR rules so the usage iframe can load
 
 ## Providers
 
-| Provider | Source |
-|----------|--------|
+| Provider | How usage is read |
+|----------|-------------------|
 | Grok | rate-limits + SuperGrok |
 | Claude | org usage API |
 | ChatGPT | session + settings scrape |
