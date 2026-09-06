@@ -1,17 +1,7 @@
-# Zero Grok Extension
+# Zero Grok extension
 
-Browser extension (MV3) — floating Diet Coke can for Grok, Claude, ChatGPT, and Gemini usage.
+Load this folder unpacked in Chrome.
 
-## Install (developer)
+Version 1.4.2 — multi-provider usage meter (Grok, Claude, ChatGPT, Gemini).
 
-1. Open `chrome://extensions`
-2. Enable **Developer mode**
-3. **Load unpacked** → select this `extension` folder (or unzip `downloads/zero-grok.zip` from the site root)
-
-## Version
-
-See `manifest.json` (currently 1.4.1).
-
-## Privacy
-
-All usage data stays in `chrome.storage.local`. No external servers.
+The packaged ZIP is published to `/downloads/zero-grok.zip` by GitHub Actions on every change under `extension/`.
