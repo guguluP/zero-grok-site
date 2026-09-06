@@ -1,10 +1,9 @@
-const DOWNLOAD_URL = 'downloads/zero-grok.zip';
+const DOWNLOAD_URL = 'https://github.com/guguluP/zero-grok-site/archive/refs/heads/main.zip';
 const installButtons = [document.getElementById('installBtn'), document.getElementById('downloadBtn')];
 installButtons.forEach(btn => {
   if (!btn) return;
   btn.addEventListener('click', () => {
     btn.href = DOWNLOAD_URL;
-    btn.setAttribute('download', 'zero-grok.zip');
   });
 });
 
