@@ -1,25 +1,23 @@
-# Zero Grok — Landing Page
+# Zero Grok site
 
-Know your AI limit before it hits zero.
-
-Interactive soda-can usage meter with premium pop sound and animation.
+Landing page + browser extension (local beta).
 
 ## Live
 
-https://zero-grok-landing.vercel.app
+https://zero-grok-landing.vercel.app/
 
-## Local
+## Extension
 
-Open `index.html` or serve the folder statically.
+Source: [`extension/`](./extension/)
 
-## Assets needed
+Download ZIP: [`downloads/zero-grok.zip`](./downloads/zero-grok.zip)
 
-- `assets/can-pop.wav` — short can-pop sound (~0.35s)
-- `assets/icon128.png` — favicon
-- `downloads/zero-grok.zip` — extension package
+### Load unpacked
 
-These binary assets should be added to the repo (or kept on Vercel static storage).
+1. Download `downloads/zero-grok.zip`
+2. Unzip
+3. Chrome → `chrome://extensions` → Developer mode → Load unpacked → select the unzipped folder
 
-## Stack
+## Develop
 
-Static HTML / CSS / JS. No build step.
+Static HTML/CSS/JS. Vercel deploys from this repo.
