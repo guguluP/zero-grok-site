@@ -1,31 +1,27 @@
-# Zero Grok site
+# Zero Grok
 
-Landing page + browser extension (local beta).
+Landing + browser extension source for **Zero Grok** — know your AI limit before it hits zero.
 
-## Live
+**Live:** [zero-grok-landing.vercel.app](https://zero-grok-landing.vercel.app/)
 
-https://zero-grok-landing.vercel.app/
+## Extension
 
-## Extension (v1.4.1)
+The full Chromium extension lives under [`extension/`](./extension/).
 
-Full source lives in [`extension/`](./extension/).
+- Manifest V3, multi-provider (Grok · Claude · ChatGPT · Gemini)
+- Floating can UI with bubbles, drag & save, refill countdown
+- Popup overview, options, onboarding
 
-| Path | Purpose |
-|------|---------|
-| `extension/` | Load this folder unpacked in Chrome/Edge |
-| `downloads/zero-grok.zip` | ZIP of the same tree (folder name `zero-grok` inside) |
+### Install (local beta)
 
-### Load unpacked
+1. Download [`downloads/zero-grok.zip`](./downloads/zero-grok.zip) from the site, **or** clone this repo.
+2. Unzip / open the folder that contains `manifest.json` (the `extension` folder if using the repo, or the root of the dedicated ZIP).
+3. Chrome → `chrome://extensions` → Developer mode → **Load unpacked**.
 
-1. Download [downloads/zero-grok.zip](./downloads/zero-grok.zip) (or clone and use `extension/`)
-2. Unzip if needed
-3. Chrome → `chrome://extensions` → **Developer mode** → **Load unpacked**
-4. Select the `zero-grok` (or `extension`) folder
+## Repo layout
 
-### Providers
+- `index.html` / `styles.css` / `script.js` — marketing landing
+- `extension/` — browser extension source
+- `downloads/zero-grok.zip` — packaged extension for one-click install (served by Vercel)
 
-Grok · Claude · ChatGPT · Gemini — local-only usage meter, refill countdown, multi-provider popup.
-
-## Develop
-
-Static HTML/CSS/JS landing (`index.html`, `styles.css`, `script.js`). Vercel deploys from this repo on push to `main`.
+© 2026 Zero Grok
