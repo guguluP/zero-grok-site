@@ -1,21 +1,46 @@
-// Zero Grok constants
-export const PROVIDERS = ['grok', 'claude', 'chatgpt', 'gemini'];
 export const STORAGE_KEYS = {
-  BY_PROVIDER: 'byProvider',
-  HISTORY: 'history',
-  SETTINGS: 'settings',
-  HIDE_CAN: 'hideCan',
-  ESTIMATE_COUNTER: 'estimateCounter'
+  USAGE: 'zeroGrokUsage',
+  SETTINGS: 'zeroGrokSettings',
+  LAST_ALERT: 'zeroGrokLastAlert',
+  POSITION: 'zeroGrokPosition',
+  HISTORY: 'zeroGrokHistory'
 };
+
 export const DEFAULT_SETTINGS = {
-  warningThreshold: 20,
-  badgeMode: 'lowest',
-  enableEstimate: false,
-  theme: 'auto'
+  canPosition: 'bottom-right',
+  alertThresholds: [70, 90, 100],
+  theme: 'auto',
+  hideCan: false,
+  soundEnabled: true,
+  badgeEnabled: true,
+  badgeMode: 'lowest', // 'lowest' | 'last'
+  pollIntervalMinutes: 5,
+  enableGrok: true,
+  enableClaude: true,
+  enableChatgpt: true,
+  enableGemini: true,
+  estimateMessagesEnabled: false,
+  onboardingComplete: false
 };
-export const REFILL_HINTS = {
-  grok: 2 * 60 * 60 * 1000,
-  claude: 5 * 60 * 60 * 1000,
-  chatgpt: 3 * 60 * 60 * 1000,
-  gemini: 5 * 60 * 60 * 1000
+
+export const PRODUCT_LABELS = {
+  2: 'Grok Build',
+  4: 'Chat',
+  5: 'Imagine',
+  6: 'Voice'
 };
+
+export const ALARM_NAMES = {
+  POLL: 'zeroGrokPoll',
+  RESET: 'zeroGrokReset'
+};
+
+export const ALL_AI_TAB_URLS = [
+  'https://grok.com/*',
+  'https://grok.x.ai/*',
+  'https://x.com/*',
+  'https://claude.ai/*',
+  'https://chatgpt.com/*',
+  'https://chat.openai.com/*',
+  'https://gemini.google.com/*'
+];
