@@ -1,4 +1,4 @@
-const DOWNLOAD_URL = 'https://litter.catbox.moe/zzo66p.zip';
+const DOWNLOAD_URL = 'https://github.com/guguluP/zero-grok-site/raw/main/downloads/zero-grok.zip';
 const installButtons = [document.getElementById('installBtn'), document.getElementById('downloadBtn')];
 installButtons.forEach((btn) => {
   if (!btn) return;

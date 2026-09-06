@@ -1,0 +1,30 @@
+name: Package extension ZIP
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'extension/**'
+      - '.github/workflows/package-extension.yml'
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Zip extension
+        run: |
+          cd extension
+          zip -r ../zero-grok.zip .
+          ls -la ../zero-grok.zip
+      - name: Commit ZIP to downloads/
+        run: |
+          mkdir -p downloads
+          cp zero-grok.zip downloads/zero-grok.zip
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add downloads/zero-grok.zip
+          git diff --staged --quiet || (git commit -m "chore: update downloads/zero-grok.zip" && git push)
