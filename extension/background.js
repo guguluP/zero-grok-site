@@ -67,9 +67,11 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === ALARM_NAMES.POLL) {
     const settings = await getSettings();
 
+    let claudePolled = false;
     if (settings.enableClaude !== false) {
       try {
         await pollClaudeUsage();
+        claudePolled = true;
       } catch (e) {
         console.warn('[Zero Grok] Claude background poll failed', e?.message || e);
       }
@@ -77,23 +79,31 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
     const tabs = await chrome.tabs.query({ url: ALL_AI_TAB_URLS });
     for (const tab of tabs) {
+      // Avoid double work: background pollClaudeUsage already pushes USAGE_PUSH to Claude tabs
+      if (claudePolled && tab.url && tab.url.includes('claude.ai')) continue;
       try {
         await chrome.tabs.sendMessage(tab.id, { type: 'SCRAPE_USAGE' });
       } catch (_) {}
     }
-  } else if (alarm.name === ALARM_NAMES.RESET) {
+  } else if (alarm.name === ALARM_NAMES.RESET || alarm.name.startsWith('zeroGrokReset:')) {
+    const provider = alarm.name.startsWith('zeroGrokReset:')
+      ? alarm.name.slice('zeroGrokReset:'.length)
+      : null;
+    const label = provider
+      ? (provider.charAt(0).toUpperCase() + provider.slice(1))
+      : 'Usage';
     chrome.notifications.create({
       type: 'basic',
       iconUrl: 'assets/icons/icon128.png',
       title: 'Zero Grok – Refill!',
-      message: 'Usage window refilled. The can is ready again 🥤'
+      message: `${label} window refilled. The can is ready again 🥤`
     });
     try {
       const tabs = await chrome.tabs.query({ url: ALL_AI_TAB_URLS });
       for (const tab of tabs) {
         try {
           await chrome.tabs.sendMessage(tab.id, { type: 'SCRAPE_USAGE' });
-          await chrome.tabs.sendMessage(tab.id, { type: 'REFILL_POP' });
+          await chrome.tabs.sendMessage(tab.id, { type: 'REFILL_POP', provider });
         } catch (_) {}
       }
     } catch (_) {}
@@ -253,11 +263,16 @@ chrome.commands?.onCommand?.addListener((command) => {
 
 async function refreshAllTabs() {
   const settings = await getSettings();
+  let claudePolled = false;
   if (settings.enableClaude !== false) {
-    try { await pollClaudeUsage(); } catch (_) {}
+    try {
+      await pollClaudeUsage();
+      claudePolled = true;
+    } catch (_) {}
   }
   const tabs = await chrome.tabs.query({ url: ALL_AI_TAB_URLS });
   for (const tab of tabs) {
+    if (claudePolled && tab.url && tab.url.includes('claude.ai')) continue;
     try {
       await chrome.tabs.sendMessage(tab.id, { type: 'SCRAPE_USAGE' });
     } catch (_) {}
@@ -278,7 +293,8 @@ async function handleUsageData(data) {
   if (data.resetAt) {
     const when = new Date(data.resetAt).getTime();
     if (when > Date.now()) {
-      chrome.alarms.create(ALARM_NAMES.RESET, { when });
+      const name = ALARM_NAMES.resetFor(data.provider);
+      chrome.alarms.create(name, { when });
     }
   }
 }
@@ -300,10 +316,18 @@ async function refreshBadgeFromStorage(settings) {
 
   let best = null;
   if ((settings.badgeMode || 'lowest') === 'last' && usage.lastProvider && by[usage.lastProvider]) {
-    const d = by[usage.lastProvider];
-    let rem = d.remainingPercent;
-    if (rem == null && typeof d.usedPercent === 'number') rem = 100 - d.usedPercent;
-    if (rem != null && Number.isFinite(rem)) best = rem;
+    const lp = usage.lastProvider;
+    const enabledLast =
+      (lp === 'grok' && settings.enableGrok !== false) ||
+      (lp === 'claude' && settings.enableClaude !== false) ||
+      (lp === 'chatgpt' && settings.enableChatgpt !== false) ||
+      (lp === 'gemini' && settings.enableGemini !== false);
+    if (enabledLast) {
+      const d = by[lp];
+      let rem = d.remainingPercent;
+      if (rem == null && typeof d.usedPercent === 'number') rem = 100 - d.usedPercent;
+      if (rem != null && Number.isFinite(rem)) best = rem;
+    }
   }
   if (best == null) {
     for (const d of enabled) {
