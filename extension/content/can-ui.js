@@ -222,13 +222,20 @@
     });
   }
 
+  function canId(provider) {
+    return 'zero-grok-can-' + (provider || 'grok');
+  }
+
   function mountCan(opts) {
     const { provider, settings = {}, onClick, colors } = opts;
+    const id = canId(provider);
 
-    let canEl = document.getElementById('zero-grok-can');
+    let canEl = document.getElementById(id);
     if (!canEl) {
       canEl = document.createElement('div');
-      canEl.id = 'zero-grok-can';
+      canEl.id = id;
+      canEl.classList.add('zg-can-root');
+      canEl.dataset.provider = provider || 'grok';
       canEl.setAttribute('aria-label', 'Zero Grok usage meter');
       canEl.innerHTML = canHTML(provider);
       document.body.appendChild(canEl);
@@ -248,8 +255,8 @@
       canEl.style.display = 'flex';
     }
 
-    if (global.ZeroGrokFx) {
-      global.ZeroGrokFx.maybeFirstPop(provider, settings.soundEnabled !== false);
+    if (global.ZeroGrokCanFx) {
+      global.ZeroGrokCanFx.playFirstUse(canEl, provider, settings.soundEnabled !== false, colors);
     }
 
     return canEl;
@@ -257,6 +264,7 @@
 
   global.ZeroGrokCanUI = {
     canHTML,
+    canId,
     setLiquidLevel,
     setSecondary,
     applyPosition,
