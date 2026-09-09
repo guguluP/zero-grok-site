@@ -32,7 +32,10 @@ export const PRODUCT_LABELS = {
 
 export const ALARM_NAMES = {
   POLL: 'zeroGrokPoll',
-  RESET: 'zeroGrokReset'
+  RESET: 'zeroGrokReset', // legacy single-name; prefer per-provider
+  resetFor(provider) {
+    return 'zeroGrokReset:' + (provider || 'grok');
+  }
 };
 
 export const ALL_AI_TAB_URLS = [
