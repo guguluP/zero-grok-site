@@ -118,12 +118,10 @@
 
   function trackRefill(provider, remainingPercent, originEl, soundEnabled, colors) {
     if (remainingPercent == null || !Number.isFinite(remainingPercent)) return;
-
     if (remainingPercent <= 2) {
       setWasEmpty(provider, true);
       return;
     }
-
     if (remainingPercent >= 8 && wasEmpty(provider)) {
       setWasEmpty(provider, false);
       if (originEl) originEl.classList.add('zg-pop-in');
@@ -142,11 +140,13 @@
       if (Number.isFinite(t) && t > Date.now() - 60000) return t;
     }
     const hint = String(data.resetHint || data.windowHint || '');
-    const rel = hint.match(/(\d+)\s*h(?:\s*(\d+)\s*m)?/i);
+    const rel = hint.match(/(\d+)\s*h(?:ours?)?(?:\s*(\d+)\s*m)?/i) || hint.match(/(\d+)\s*m(?:in)?/i);
     if (rel) {
       const h = parseInt(rel[1], 10) || 0;
-      const m = parseInt(rel[2], 10) || 0;
-      return Date.now() + (h * 3600 + m * 60) * 1000;
+      const m = rel[2] != null ? (parseInt(rel[2], 10) || 0) : (hint.match(/\d+\s*m/i) && !hint.match(/\d+\s*h/i) ? parseInt(rel[1], 10) : 0);
+      const hours = hint.match(/\d+\s*h/i) ? h : 0;
+      const mins = hint.match(/\d+\s*h/i) ? (parseInt(rel[2], 10) || 0) : (hint.match(/\d+\s*m/i) ? h : 0);
+      return Date.now() + (hours * 3600 + mins * 60) * 1000;
     }
     return null;
   }
