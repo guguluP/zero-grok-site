@@ -36,11 +36,13 @@
       return canEl;
     }
     canEl = document.createElement('div');
-    canEl.id = 'zero-grok-can';
+    canEl.id = 'zero-grok-can-chatgpt';
+    canEl.classList.add('zg-can-root');
+    canEl.dataset.provider = 'chatgpt';
     canEl.innerHTML = '<div class="zg-can-body"><div class="zg-percent" id="zg-percent">--%</div></div>';
     canEl.addEventListener('click', togglePanel);
     document.body.appendChild(canEl);
-    canEl.className = 'zg-can zg-pos-' + (settings.canPosition || 'bottom-right');
+    canEl.className = 'zg-can-root zg-can zg-pos-' + (settings.canPosition || 'bottom-right');
     return canEl;
   }
   function showCan() { createCan(); canEl.style.display = 'flex'; }
