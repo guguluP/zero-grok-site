@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Zero Grok",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Diet Coke can for Grok, Claude, ChatGPT & Gemini \u2014 bubbles, refill countdown, multi-provider popup, drag & save.",
   "permissions": [
     "storage",
