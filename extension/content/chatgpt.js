@@ -166,20 +166,67 @@
   }
 
   function scrapeDom() {
-    const text = document.body?.innerText || '';
-    const m = text.match(/(\d{1,3})\s*%\s*(?:used|remaining|left)?/i);
-    if (m) {
-      const v = parseInt(m[1], 10);
-      const isRem = /remaining|left/i.test(m[0]);
-      return {
-        provider: 'chatgpt',
-        remainingPercent: isRem ? v : Math.max(0, 100 - v),
-        usedPercent: isRem ? Math.max(0, 100 - v) : v,
-        windowHint: 'DOM', resetHint: '', source: 'settings-dom'
-      };
+    // Prefer scoped UI surfaces over full-page text to avoid matching chat content
+    // (e.g. "what happens when you have reached your usage limit on AWS?").
+    const candidates = [];
+    const selectors = [
+      '[role="alert"]',
+      '[role="status"]',
+      '[data-testid*="limit"]',
+      '[data-testid*="usage"]',
+      '[class*="toast"]',
+      '[class*="banner"]',
+      '[class*="notice"]',
+      '[class*="alert"]',
+      'nav',
+      'header',
+      '[class*="sidebar"]',
+      '[class*="settings"]'
+    ];
+    for (const sel of selectors) {
+      try {
+        document.querySelectorAll(sel).forEach((el) => {
+          const t = (el.innerText || el.textContent || '').trim();
+          if (t && t.length < 800) candidates.push(t);
+        });
+      } catch (_) {}
     }
-    if (/you(?:'ve| have)?\s+(?:reached|hit)\s+(?:your\s+)?(?:usage\s+|message\s+)?limit/i.test(text)) {
-      return { provider: 'chatgpt', usedPercent: 100, remainingPercent: 0, windowHint: 'Limit reached', resetHint: 'Wait for reset', source: 'dom-limit' };
+
+    // Require "used|remaining|left" so bare "20%" in chat replies is ignored
+    const pctRe = /(\d{1,3})\s*%\s*(?:used|remaining|left)\b/i;
+    for (const text of candidates) {
+      const m = text.match(pctRe);
+      if (m) {
+        const v = parseInt(m[1], 10);
+        if (v < 0 || v > 100) continue;
+        const isRem = /remaining|left/i.test(m[0]);
+        return {
+          provider: 'chatgpt',
+          remainingPercent: isRem ? v : Math.max(0, 100 - v),
+          usedPercent: isRem ? Math.max(0, 100 - v) : v,
+          windowHint: 'DOM',
+          resetHint: '',
+          source: 'dom-heuristic'
+        };
+      }
+    }
+
+    // Limit banner: only trust when near UI markers (disabled input / try-again)
+    const limitRe = /you(?:'ve| have)?\s+(?:reached|hit)\s+(?:your\s+)?(?:usage\s+|message\s+)?limit/i;
+    const hasLimitUi =
+      !!document.querySelector('button[disabled], [aria-disabled="true"]') ||
+      /try again|come back|upgrade|buy more/i.test(document.body?.innerText?.slice(0, 5000) || '');
+    for (const text of candidates) {
+      if (limitRe.test(text) && hasLimitUi) {
+        return {
+          provider: 'chatgpt',
+          usedPercent: 100,
+          remainingPercent: 0,
+          windowHint: 'Limit reached',
+          resetHint: 'Wait for reset',
+          source: 'dom-limit'
+        };
+      }
     }
     return null;
   }
