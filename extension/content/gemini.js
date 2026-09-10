@@ -248,10 +248,45 @@
   }
 
   function scrapeDomLimit() {
-    const text = document.body?.innerText || '';
-    if (!/you(?:'ve| have)?\s+(?:reached|hit)\s+(?:your\s+)?(?:usage\s+)?limit/i.test(text) && !/usage\s+limit\s+(?:reached|exceeded)/i.test(text))
-      return null;
-    return { provider: 'gemini', usedPercent: 100, remainingPercent: 0, windowHint: 'Limit reached', resetHint: 'Wait for reset', source: 'dom-limit' };
+    // Scope to alert/banner surfaces — never full-page innerText (chat false positives).
+    const candidates = [];
+    const selectors = [
+      '[role="alert"]',
+      '[role="status"]',
+      '[class*="toast"]',
+      '[class*="banner"]',
+      '[class*="notice"]',
+      '[class*="alert"]',
+      '[class*="limit"]',
+      '[data-test-id*="limit"]',
+      '[data-testid*="limit"]'
+    ];
+    for (const sel of selectors) {
+      try {
+        document.querySelectorAll(sel).forEach((el) => {
+          const t = (el.innerText || el.textContent || '').trim();
+          if (t && t.length < 600) candidates.push(t);
+        });
+      } catch (_) {}
+    }
+    const limitRe = /you(?:'ve| have)?\s+(?:reached|hit)\s+(?:your\s+)?(?:usage\s+)?limit/i;
+    const limitRe2 = /usage\s+limit\s+(?:reached|exceeded)/i;
+    const hasLimitUi =
+      !!document.querySelector('button[disabled], [aria-disabled="true"], textarea[disabled]') ||
+      /try again|come back|upgrade|resets?/i.test(candidates.join(' ').slice(0, 2000));
+    for (const text of candidates) {
+      if ((limitRe.test(text) || limitRe2.test(text)) && hasLimitUi) {
+        return {
+          provider: 'gemini',
+          usedPercent: 100,
+          remainingPercent: 0,
+          windowHint: 'Limit reached',
+          resetHint: 'Wait for reset',
+          source: 'dom-limit'
+        };
+      }
+    }
+    return null;
   }
 
   function scrapeLivePage() {
@@ -298,7 +333,7 @@
       if (res.status === 401 || res.status === 403) return { auth: true };
       if (!res.ok) return null;
       const html = await res.text();
-      if (/accounts\.google\.com|ServiceLogin|Sign in/i.test(html) && !/\d{1,3}\s*%/i.test(html)) return { auth: true };
+      if (/accounts\\.google\\.com|ServiceLogin|Sign in/i.test(html) && !/\\d{1,3}\\s*%/i.test(html)) return { auth: true };
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const data = extractFromDocument(doc);
       if (data) data.source = 'usage-fetch';
