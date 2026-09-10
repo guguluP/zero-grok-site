@@ -274,14 +274,48 @@
   }
 
   function scrapeDomLimit() {
-    const text = document.body?.innerText || '';
-    const m = text.match(/you(?:'ve| have)?\s+(?:reached|hit)\s+(?:your\s+)?(?:usage\s+|message\s+)?limit[^.]{0,100}/i) ||
-              text.match(/usage\s+limit\s+(?:reached|exceeded)/i);
-    if (!m) return null;
-    return {
-      provider: 'claude', usedPercent: 100, remainingPercent: 0,
-      windowHint: 'Limit reached', resetHint: 'Wait for reset', source: 'dom-limit'
-    };
+    // Scope to alert/banner/toast surfaces — never full document.body.innerText,
+    // which matches ordinary chat text ("what happens when you reach your usage limit?").
+    const candidates = [];
+    const selectors = [
+      '[role="alert"]',
+      '[role="status"]',
+      '[class*="toast"]',
+      '[class*="banner"]',
+      '[class*="notice"]',
+      '[class*="alert"]',
+      '[class*="limit"]',
+      '[data-testid*="limit"]',
+      '[data-testid*="usage"]'
+    ];
+    for (const sel of selectors) {
+      try {
+        document.querySelectorAll(sel).forEach((el) => {
+          const t = (el.innerText || el.textContent || '').trim();
+          if (t && t.length < 600) candidates.push(t);
+        });
+      } catch (_) {}
+    }
+    const limitRe = /you(?:'ve| have)?\s+(?:reached|hit)\s+(?:your\s+)?(?:usage\s+|message\s+)?limit/i;
+    const limitRe2 = /usage\s+limit\s+(?:reached|exceeded)/i;
+    const hasLimitUi =
+      !!document.querySelector('button[disabled], [aria-disabled="true"], textarea[disabled], [contenteditable="false"]') ||
+      /try again|come back later|upgrade|resets?/i.test(
+        candidates.join(' ').slice(0, 2000)
+      );
+    for (const text of candidates) {
+      if ((limitRe.test(text) || limitRe2.test(text)) && hasLimitUi) {
+        return {
+          provider: 'claude',
+          usedPercent: 100,
+          remainingPercent: 0,
+          windowHint: 'Limit reached',
+          resetHint: 'Wait for reset',
+          source: 'dom-limit'
+        };
+      }
+    }
+    return null;
   }
 
   async function scrape() {
