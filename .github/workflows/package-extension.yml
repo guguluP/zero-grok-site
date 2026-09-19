@@ -15,16 +15,30 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Zip extension
+      - name: Zip extension and write version feed
         run: |
           cd extension
           zip -r ../zero-grok.zip .
           ls -la ../zero-grok.zip
+          VERSION=$(python3 -c "import json; print(json.load(open('manifest.json'))['version'])")
+          mkdir -p ../downloads
+          python3 - <<PY
+          import json, datetime
+          version = "$VERSION"
+          feed = {
+            "version": version,
+            "publishedAt": datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+            "zipUrl": "https://github.com/guguluP/zero-grok-site/raw/main/downloads/zero-grok.zip",
+            "releaseNotes": "Zero Grok " + version + " published."
+          }
+          open("../downloads/version.json", "w").write(json.dumps(feed, indent=2) + "\n")
+          print("Wrote downloads/version.json", feed)
+          PY
       - name: Commit ZIP to downloads/
         run: |
           mkdir -p downloads
           cp zero-grok.zip downloads/zero-grok.zip
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add downloads/zero-grok.zip
+          git add downloads/zero-grok.zip downloads/version.json
           git diff --staged --quiet || (git commit -m "chore: update downloads/zero-grok.zip" && git push)
