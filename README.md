@@ -19,7 +19,17 @@ The ZIP is rebuilt automatically by GitHub Actions whenever files under `extensi
 
 ## Update
 
-Re-download the same ZIP URL after we push fixes, then reload the extension in Chrome.
+The extension checks `downloads/version.json` on this repo every 6 hours (and on browser startup).
+
+When a newer version is published:
+
+1. You get a desktop notification and a banner in the popup  
+2. Click **Download ZIP**  
+3. Unzip over the folder you loaded, then **Reload** the extension on `chrome://extensions`
+
+Chrome cannot silently replace a *Load unpacked* extension. The checker + ZIP download is the automatic path for this distribution.
+
+Turn the checker off in Options → Updates.
 
 ## Gemini tip
 
