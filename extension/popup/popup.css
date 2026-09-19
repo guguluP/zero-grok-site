@@ -19,6 +19,46 @@ body {
   margin-bottom: 12px;
 }
 
+.update-banner {
+  background: #fff5f5;
+  border: 1px solid #f3c4c8;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.update-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #c41e3a;
+}
+.update-notes {
+  font-size: 11px;
+  opacity: 0.75;
+  margin-top: 4px;
+  line-height: 1.35;
+}
+.update-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.update-actions button {
+  flex: 1;
+  padding: 7px 8px;
+  border: none;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #c41e3a;
+  color: #fff;
+}
+.update-actions button.ghost {
+  background: transparent;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
 .providers {
   display: flex;
   flex-direction: column;
