@@ -3,7 +3,8 @@ export const STORAGE_KEYS = {
   SETTINGS: 'zeroGrokSettings',
   LAST_ALERT: 'zeroGrokLastAlert',
   POSITION: 'zeroGrokPosition',
-  HISTORY: 'zeroGrokHistory'
+  HISTORY: 'zeroGrokHistory',
+  UPDATE: 'zeroGrokUpdate'
 };
 
 export const DEFAULT_SETTINGS = {
@@ -20,7 +21,8 @@ export const DEFAULT_SETTINGS = {
   enableChatgpt: true,
   enableGemini: true,
   estimateMessagesEnabled: false,
-  onboardingComplete: false
+  onboardingComplete: false,
+  autoCheckUpdates: true
 };
 
 export const PRODUCT_LABELS = {
@@ -33,9 +35,22 @@ export const PRODUCT_LABELS = {
 export const ALARM_NAMES = {
   POLL: 'zeroGrokPoll',
   RESET: 'zeroGrokReset', // legacy single-name; prefer per-provider
+  UPDATE: 'zeroGrokUpdateCheck',
   resetFor(provider) {
     return 'zeroGrokReset:' + (provider || 'grok');
   }
+};
+
+export const UPDATE_FEED = {
+  versionJson: [
+    'https://raw.githubusercontent.com/guguluP/zero-grok-site/main/downloads/version.json',
+    'https://cdn.jsdelivr.net/gh/guguluP/zero-grok-site@main/downloads/version.json'
+  ],
+  manifestJson: [
+    'https://raw.githubusercontent.com/guguluP/zero-grok-site/main/extension/manifest.json'
+  ],
+  zipUrl: 'https://github.com/guguluP/zero-grok-site/raw/main/downloads/zero-grok.zip',
+  repoUrl: 'https://github.com/guguluP/zero-grok-site'
 };
 
 export const ALL_AI_TAB_URLS = [
