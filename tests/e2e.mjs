@@ -709,9 +709,11 @@ await check('Popup: update banner only when opted in and a newer version is know
   await send(pg, { type: 'SAVE_SETTINGS', payload: { autoCheckUpdates: true } });
   await pg.reload();
   await pg.locator('#update-banner').waitFor({ state: 'visible' });
-  assert(/9\.9\.9/.test(await pg.locator('#update-title').textContent()));
+  assert(/9\.9\.9/.test(await pg.locator('#update-title').textContent()), 'title: ' + (await pg.locator('#update-title').textContent()));
   await pg.click('#update-dismiss');
-  assert(await pg.locator('#update-banner').isHidden());
+  await pg.locator('#update-banner').waitFor({ state: 'hidden', timeout: 5000 });
+  const dism = await getLocal(pg, 'zeroGrokUpdate');
+  assert(dism && dism.dismissedVersion === '9.9.9', 'dismissed version stored: ' + JSON.stringify(dism));
   await pg.reload();
   await pg.waitForSelector('.provider-card');
   assert(await pg.locator('#update-banner').isHidden(), 'dismissed version shown again');
