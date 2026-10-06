@@ -1,6 +1,17 @@
-/* Zero Grok – floating can + panel (shared by every provider) */
+/*
+ * Zero Grok – floating can + panel (shared by every provider).
+ * Colours, timings and surfaces come from utils/tokens.css (injected first).
+ * Motion rules: only opacity / transform are animated (plus the SVG clip `y`
+ * driven by requestAnimationFrame in can-ui.js). Everything is switched off
+ * by the reduce-motion setting (.zg-reduce-motion) and by the OS preference.
+ */
 
 .zg-can-root {
+  /* Corner insets. Bottom corners sit above the site's message box: 96px by
+     default, raised further by can-ui.js (avoidComposer) when a taller composer
+     is detected. */
+  --zg-inset: 20px;
+  --zg-bottom-inset: 96px;
   position: fixed;
   z-index: 2147483646;
   width: 72px;
@@ -12,10 +23,9 @@
   user-select: none;
   touch-action: none;
   filter: drop-shadow(0 8px 16px rgba(0,0,0,0.35));
-  transition: transform 0.15s ease;
   outline: none;
 }
-.zg-can-root:focus-visible { outline: 3px solid #4c9ffe; outline-offset: 2px; border-radius: 10px; }
+.zg-can-root:focus-visible { outline: 3px solid var(--zg-focus); outline-offset: 3px; border-radius: 12px; box-shadow: 0 0 0 6px rgba(255,255,255,0.85); }
 .zg-can-root:active, .zg-can-root.zg-dragging { cursor: grabbing; }
 .zg-can-root.zg-pop-in { animation: zg-pop-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 @keyframes zg-pop-in {
@@ -23,55 +33,72 @@
   60% { transform: scale(1.08) rotate(3deg); opacity: 1; }
   100% { transform: scale(1) rotate(0); opacity: 1; }
 }
-.zg-pos-bottom-right { right: 20px; bottom: 20px; left: auto; top: auto; }
-.zg-pos-bottom-left { left: 20px; bottom: 20px; right: auto; top: auto; }
-.zg-pos-top-right { right: 20px; top: 20px; left: auto; bottom: auto; }
-.zg-pos-top-left { left: 20px; top: 20px; right: auto; bottom: auto; }
+.zg-pos-bottom-right { right: var(--zg-inset); bottom: calc(var(--zg-bottom-inset) + env(safe-area-inset-bottom, 0px)); left: auto; top: auto; }
+.zg-pos-bottom-left { left: var(--zg-inset); bottom: calc(var(--zg-bottom-inset) + env(safe-area-inset-bottom, 0px)); right: auto; top: auto; }
+.zg-pos-top-right { right: var(--zg-inset); top: var(--zg-inset); left: auto; bottom: auto; }
+.zg-pos-top-left { left: var(--zg-inset); top: var(--zg-inset); right: auto; bottom: auto; }
 
 .zg-can-body { width: 64px; height: 128px; position: relative; }
 .zg-can-svg { width: 64px; height: 128px; display: block; }
+
+/* % label: drawn on a dark pill so it stays >= 4.5:1 over any liquid colour or bare metal */
 .zg-percent {
-  position: absolute; left: 0; right: 0; bottom: 18px;
-  text-align: center;
-  font: 800 13px/1.1 system-ui, -apple-system, "Segoe UI", sans-serif;
+  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
+  padding: 1px 6px; border-radius: 7px;
+  background: var(--zg-pill);
+  text-align: center; white-space: nowrap;
+  font: 800 13px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif;
   color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+  text-shadow: 0 1px 1px rgba(0,0,0,0.6);
   pointer-events: none;
 }
 .zg-percent.zg-ok { color: #e8ffe8; }
 .zg-percent.zg-warn { color: #fff3cd; }
 .zg-percent.zg-critical { color: #ffd0d0; }
+/* reset countdown / weekly / "est." – readable 11px pill under the can */
 .zg-secondary {
-  position: absolute; left: -6px; right: -6px; bottom: 4px;
-  text-align: center;
-  font: 600 9px/1.1 system-ui, -apple-system, sans-serif;
-  color: rgba(255,255,255,0.9);
-  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  position: absolute; left: 50%; top: calc(100% + 3px); transform: translateX(-50%);
+  padding: 1px 6px; border-radius: 6px;
+  background: var(--zg-pill);
+  text-align: center; white-space: nowrap;
+  font: 600 11px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+  color: #fff;
   pointer-events: none;
-  white-space: nowrap;
 }
 .zg-can-root.zg-estimate .zg-can-svg { opacity: 0.85; }
 .zg-can-root.zg-needs-update .zg-percent { color: #ffd166; }
 
-/* minimize button (shows on hover/focus) */
+/* minimize button (shows on hover/focus) – 24px target */
 .zg-mini-btn {
-  position: absolute; top: 0; right: 0;
-  width: 18px; height: 18px; padding: 0;
-  border-radius: 50%; border: none;
-  background: rgba(20,20,22,0.85); color: #fff;
-  font: 700 12px/18px system-ui, sans-serif;
-  cursor: pointer; opacity: 0; transition: opacity 0.15s;
+  position: absolute; top: -4px; right: -4px;
+  width: 24px; height: 24px; padding: 0;
+  border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.85);
+  background: rgba(20,20,22,0.9); color: #fff;
+  font: 700 14px/20px system-ui, sans-serif;
+  cursor: pointer; opacity: 0; transition: opacity var(--zg-dur-fast) ease;
 }
 .zg-can-root:hover .zg-mini-btn, .zg-can-root:focus-within .zg-mini-btn { opacity: 1; }
+.zg-mini-btn:focus-visible { outline: 2px solid var(--zg-focus); outline-offset: 2px; }
 
-/* minimized: a small status dot */
-.zg-can-root.zg-mini { width: 20px; height: 20px; border-radius: 50%; background: #888; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)); cursor: pointer; }
+/* minimized: a 28px status ring (level colour, brand colour when unknown) */
+.zg-can-root { --zg-dot-color: var(--zg-brand, #8a8f98); }
+.zg-can-root.zg-lvl-ok { --zg-dot-color: var(--zg-ok-bar); }
+.zg-can-root.zg-lvl-warn { --zg-dot-color: var(--zg-warn-bar); }
+.zg-can-root.zg-lvl-critical { --zg-dot-color: var(--zg-crit-bar); }
+.zg-dot {
+  display: none; position: relative; box-sizing: border-box;
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 3px solid var(--zg-dot-color);
+  background: rgba(20,20,22,0.9);
+  box-shadow: 0 0 0 1.5px rgba(255,255,255,0.9);
+}
+.zg-dot::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--zg-dot-color); }
+.zg-can-root.zg-mini { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)); }
 .zg-can-root.zg-mini .zg-can-body, .zg-can-root.zg-mini .zg-mini-btn { display: none; }
-.zg-can-root.zg-mini.zg-lvl-ok { background: #27ae60; }
-.zg-can-root.zg-mini.zg-lvl-warn { background: #f39c12; }
-.zg-can-root.zg-mini.zg-lvl-critical { background: #e74c3c; }
+.zg-can-root.zg-mini .zg-dot { display: block; }
+.zg-can-root.zg-mini:focus-visible { border-radius: 50%; }
 
-.zg-liquid { transition: fill 0.4s ease; }
 .zg-bubble { fill: rgba(255,255,255,0.55); animation: zg-rise linear infinite; }
 @keyframes zg-rise {
   0% { transform: translateY(0); opacity: 0.7; }
@@ -83,23 +110,40 @@
   0%, 100% { opacity: 0.25; transform: translateY(0); }
   50% { opacity: 0.7; transform: translateY(4px); }
 }
-.zg-can-root.zg-at-limit { animation: zg-limit-pulse 1.4s ease-in-out infinite; }
-@keyframes zg-limit-pulse {
-  0%, 100% { filter: drop-shadow(0 8px 16px rgba(0,0,0,0.35)); }
-  50% { filter: drop-shadow(0 8px 22px rgba(231,76,60,0.55)); }
+
+/* at-limit: a red halo behind the can that pulses with opacity + scale only (no filter animation) */
+.zg-can-root::before {
+  content: ""; position: absolute; z-index: -1; pointer-events: none;
+  /* wider than the can so the glow shows around it, not just behind it */
+  left: -18px; right: -18px; top: -6px; bottom: 6px; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(231,76,60,0.85) 55%, rgba(231,76,60,0.35) 78%, rgba(231,76,60,0));
+  opacity: 0; transform: scale(0.92);
+}
+.zg-can-root.zg-mini::before { left: -8px; right: -8px; top: -8px; bottom: -8px; border-radius: 50%; }
+.zg-can-root.zg-at-limit::before { animation: zg-halo 1.4s ease-in-out infinite; }
+@keyframes zg-halo {
+  0%, 100% { opacity: 0.35; transform: scale(0.94); }
+  50% { opacity: 1; transform: scale(1.06); }
 }
 
-/* reduce motion (setting or OS preference) */
+/* reduce motion (setting) */
 .zg-reduce-motion .zg-bubble, .zg-reduce-motion .zg-condensation circle,
-.zg-can-root.zg-reduce-motion, .zg-can-root.zg-reduce-motion.zg-at-limit { animation: none !important; }
+.zg-can-root.zg-reduce-motion, .zg-can-root.zg-reduce-motion::before { animation: none !important; }
+.zg-can-root.zg-reduce-motion.zg-at-limit::before { opacity: 0.75; transform: none; }
 .zg-reduce-motion .zg-bubbles { display: none; }
+.zg-panel.zg-reduce-motion, .zg-panel.zg-reduce-motion .zg-bar, .zg-can-root.zg-reduce-motion .zg-mini-btn { transition: none !important; }
+/* reduce motion (OS preference) */
 @media (prefers-reduced-motion: reduce) {
-  .zg-bubble, .zg-condensation circle, .zg-can-root.zg-at-limit, .zg-can-root.zg-pop-in, .zg-fizz-particle { animation: none !important; }
+  .zg-bubble, .zg-condensation circle, .zg-can-root, .zg-can-root::before, .zg-can-root.zg-pop-in, .zg-fizz-particle { animation: none !important; }
+  .zg-can-root.zg-at-limit::before { opacity: 0.75; transform: none; }
+  .zg-bubbles { display: none; }
+  .zg-panel, .zg-panel .zg-bar, .zg-mini-btn { transition: none !important; }
 }
 
 /* ---------------- panel ---------------- */
+/* Stays in the DOM; open/close is an opacity + transform transition. When closed
+   it is visibility:hidden + inert + aria-hidden (set in provider-core.js). */
 .zg-panel {
-  display: none;
   position: fixed;
   z-index: 2147483647;
   width: 272px;
@@ -109,64 +153,81 @@
   box-shadow: 0 12px 40px rgba(0,0,0,0.35);
   font: 13px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   text-align: left;
-  /* light theme defaults */
-  background: rgba(255,255,255,0.98);
-  color: #1d1d1f;
-  border: 1px solid rgba(0,0,0,0.08);
+  background: var(--zg-surface);
+  color: var(--zg-text);
+  border: 1px solid var(--zg-line);
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(8px) scale(0.97);
+  transform-origin: bottom right;
+  pointer-events: none;
+  transition: opacity var(--zg-dur-fast) var(--zg-ease-in), transform var(--zg-dur-fast) var(--zg-ease-in), visibility 0s linear var(--zg-dur-fast);
 }
-.zg-panel.zg-open { display: block; }
-.zg-panel.zg-theme-dark { background: rgba(20,20,22,0.96); color: #f2f2f2; border-color: rgba(255,255,255,0.1); }
+.zg-panel.zg-open {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition: opacity var(--zg-dur) var(--zg-ease-out), transform var(--zg-dur) var(--zg-ease-out), visibility 0s;
+}
 .zg-panel * { box-sizing: border-box; }
+.zg-panel :focus-visible { outline: 2px solid var(--zg-focus); outline-offset: 2px; }
 .zg-panel-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 12px; font-weight: 700; font-size: 13px;
-  border-bottom: 1px solid rgba(127,127,127,0.18);
+  border-bottom: 1px solid var(--zg-line);
 }
-.zg-close { background: transparent; border: none; color: inherit; opacity: 0.6; font-size: 18px; cursor: pointer; line-height: 1; padding: 0 4px; }
-.zg-close:hover, .zg-close:focus-visible { opacity: 1; }
+.zg-close {
+  background: transparent; border: none; color: var(--zg-muted); font-size: 18px; cursor: pointer; line-height: 1;
+  min-width: 24px; min-height: 24px; padding: 0 4px; border-radius: 6px;
+}
+.zg-close:hover, .zg-close:focus-visible { color: var(--zg-text); background: var(--zg-chip); }
 .zg-panel-body { padding: 14px; }
 .zg-big-percent { font-size: 40px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
-.zg-label { font-size: 12px; opacity: 0.7; margin: 2px 0 10px; }
-.zg-bar-wrap { height: 8px; background: rgba(127,127,127,0.2); border-radius: 99px; overflow: hidden; }
-.zg-bar { height: 100%; width: 0%; border-radius: 99px; background: #27ae60; transition: width 0.45s ease, background 0.3s ease; }
-.zg-bar.zg-ok { background: #27ae60; }
-.zg-bar.zg-warn { background: #f39c12; }
-.zg-bar.zg-critical { background: #e74c3c; }
-.zg-reduce-motion .zg-bar { transition: none; }
+.zg-label { font-size: 12px; color: var(--zg-muted); margin: 2px 0 10px; }
+.zg-bar-wrap { height: 8px; background: var(--zg-track); border-radius: 99px; overflow: hidden; }
+/* full-width fill scaled with transform (no layout per frame) */
+.zg-bar {
+  height: 100%; width: 100%;
+  transform-origin: left center; transform: scaleX(0);
+  background: var(--zg-ok-bar);
+  transition: transform 0.45s var(--zg-ease-out), background-color 0.3s ease;
+}
+.zg-bar.zg-ok { background: var(--zg-ok-bar); }
+.zg-bar.zg-warn { background: var(--zg-warn-bar); }
+.zg-bar.zg-critical { background: var(--zg-crit-bar); }
 .zg-meta-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 11px; flex-wrap: wrap; }
-.zg-conf { padding: 1px 7px; border-radius: 99px; font-weight: 600; font-size: 10.5px; background: rgba(127,127,127,0.18); }
-.zg-conf-official { background: rgba(39,174,96,0.18); color: #1e8449; }
-.zg-conf-page { background: rgba(52,152,219,0.18); color: #21618c; }
-.zg-conf-estimate { background: rgba(243,156,18,0.2); color: #9a6200; }
-.zg-theme-dark .zg-conf-official { color: #7be3a5; }
-.zg-theme-dark .zg-conf-page { color: #8cc8f2; }
-.zg-theme-dark .zg-conf-estimate { color: #ffcf7a; }
-.zg-updated { opacity: 0.6; }
+.zg-conf { padding: 1px 7px; border-radius: 99px; font-weight: 600; font-size: 10.5px; background: var(--zg-chip); color: var(--zg-muted); }
+.zg-conf-official { background: var(--zg-official-bg); color: var(--zg-official-text); }
+.zg-conf-page { background: var(--zg-page-bg); color: var(--zg-page-text); }
+.zg-conf-estimate { background: var(--zg-estimate-bg); color: var(--zg-estimate-text); }
+.zg-updated { color: var(--zg-muted); }
 .zg-reset, .zg-forecast, .zg-status, .zg-suggest { margin-top: 8px; font-size: 11.5px; line-height: 1.35; }
 .zg-reset:empty, .zg-forecast:empty, .zg-status:empty, .zg-suggest:empty, .zg-breakdown:empty { display: none; }
 .zg-forecast { font-weight: 600; }
-.zg-status { opacity: 0.8; }
-.zg-status-warn { opacity: 1; color: #b9770e; font-weight: 600; }
-.zg-theme-dark .zg-status-warn { color: #ffd166; }
-.zg-suggest { padding: 6px 8px; border-radius: 8px; background: rgba(52,152,219,0.14); }
-.zg-breakdown { margin-top: 10px; border-top: 1px solid rgba(127,127,127,0.18); padding-top: 8px; }
+.zg-status { color: var(--zg-muted); }
+.zg-status-warn { color: var(--zg-warn-text); font-weight: 600; }
+.zg-suggest { padding: 6px 8px; border-radius: 8px; background: var(--zg-info); }
+.zg-breakdown { margin-top: 10px; border-top: 1px solid var(--zg-line); padding-top: 8px; }
 .zg-bd-row { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; padding: 2px 0; }
-.zg-bd-label { opacity: 0.75; }
+.zg-bd-label { color: var(--zg-muted); }
 .zg-bd-val { font-weight: 600; white-space: nowrap; }
 .zg-footer { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
 .zg-btn {
   flex: 1 1 auto;
-  background: rgba(127,127,127,0.12);
-  border: 1px solid rgba(127,127,127,0.25);
-  color: inherit;
+  background: var(--zg-btn);
+  border: 1px solid var(--zg-line);
+  color: var(--zg-btn-text);
   border-radius: 8px;
   padding: 7px 8px;
+  min-height: 30px;
   font: 600 11.5px system-ui, sans-serif;
   cursor: pointer;
 }
-.zg-btn:hover, .zg-btn:focus-visible { background: rgba(127,127,127,0.22); }
+.zg-btn:hover { filter: brightness(0.96); }
+.zg-theme-dark .zg-btn:hover { filter: brightness(1.15); }
 
-/* fizz particles (first use / refill) */
+/* fizz particles (first use / refill) – never spawned with reduced motion (can-fx.js) */
 .zg-fizz-particle {
   position: fixed; width: 6px; height: 6px; border-radius: 50%;
   pointer-events: none; z-index: 2147483647;

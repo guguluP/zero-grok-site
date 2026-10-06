@@ -269,7 +269,7 @@
     "message": "Watch your AI usage drain like a soda can. Never get rate-limited by surprise."
   },
   "onbTip": {
-    "message": "Open a supported site while signed in and the can appears. Click it for details, drag it to any corner, or press Alt+Shift+U. For Gemini, open gemini.google.com/usage once."
+    "message": "Open a supported site while signed in and the can appears above the message box. Click it for details, drag it to any corner, or press Alt+Shift+U. For Gemini, open gemini.google.com/usage once."
   },
   "onbTipTitle": {
     "message": "Quick tips"
@@ -368,7 +368,7 @@
     "message": "Top right"
   },
   "positionHint": {
-    "message": "Drag the can anywhere — drop it near a corner to snap. Hover it and press – to shrink it to a dot."
+    "message": "Bottom corners sit above the site's message box. Drag the can anywhere — drop it near a corner to snap. Hover it and press – to shrink it to a dot."
   },
   "privacyLink": {
     "message": "Privacy"
@@ -510,5 +510,20 @@
   },
   "weekly": {
     "message": "Weekly"
+  },
+  "usageMeterLabel": {
+    "message": "$1 usage meter"
+  },
+  "weeklyShort": {
+    "message": "W $1%"
+  },
+  "expandHint": {
+    "message": "click to expand"
+  },
+  "range7d": {
+    "message": "7d"
+  },
+  "range30d": {
+    "message": "30d"
   }
 }

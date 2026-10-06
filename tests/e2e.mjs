@@ -52,6 +52,18 @@ const mock = {
 const page = (title, body, extraHead = '') => `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>${extraHead}</head>
 <body style="margin:0;font-family:sans-serif;min-height:100vh"><main id="app"><h1>${title}</h1>${body}
 <textarea id="prompt" aria-label="prompt"></textarea><button type="button" id="send" aria-label="Send message">Send</button></main></body></html>`;
+// Realistic chat layout: sidebar + a message box fixed to the bottom of the viewport
+// (like grok.com / claude.ai / chatgpt.com / gemini). Used for the can↔composer overlap checks.
+const composerPage = (title, tall) => `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>
+  body{margin:0;font-family:system-ui,sans-serif;background:#0d0d0d;color:#eee;min-height:100vh}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:#141414;border-right:1px solid #2a2a2a}
+  #app{margin-left:220px;padding:24px 24px 160px}
+  .composer{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;padding:14px 20px;background:#1a1a1a;border-top:1px solid #333;z-index:10}
+  #prompt{flex:1;min-height:${tall ? 120 : 44}px;border-radius:12px;border:1px solid #444;background:#111;color:#fff;padding:10px 14px}
+  #send{padding:10px 18px;border-radius:12px;border:none;background:#c41e3a;color:#fff;font-weight:700}
+  @media(max-width:500px){.sidebar{display:none}#app{margin-left:0}}
+</style></head><body><aside class="sidebar"></aside><main id="app"><h1>${title}</h1><p>Chat transcript.</p></main>
+<form class="composer"><textarea id="prompt" aria-label="Message"></textarea><button type="button" id="send" aria-label="Send message">Send</button></form></body></html>`;
 const json = (route, obj, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(obj) });
 const html = (route, body, headers = {}) => route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body, headers });
 
@@ -72,6 +84,10 @@ async function handleRoute(route) {
   const req = route.request();
   const url = new URL(req.url());
   const host = url.hostname, p = url.pathname;
+  if (p === '/zg-composer' || p === '/zg-composer-tall') {
+    const tt = host === 'gemini.google.com' ? { 'content-security-policy': "require-trusted-types-for 'script'; trusted-types default" } : {};
+    return html(route, composerPage(host, p.endsWith('-tall')), tt);
+  }
   // ---- Grok
   if (host === 'grok.com') {
     if (p === '/rest/rate-limits') {
@@ -179,6 +195,100 @@ const store = (pg, items) => pg.evaluate((i) => chrome.storage.local.set(i), ite
 const getLocal = (pg, key) => pg.evaluate((k) => chrome.storage.local.get(k).then((r) => r[k]), key);
 const canSel = (id) => `.zg-can-root[data-provider="${id}"]`;
 const canText = (pg, id) => pg.locator(canSel(id) + ' .zg-percent').textContent();
+
+/** Overlap (px²) of the whole can box with the Send button, the textarea and the composer bar. */
+const overlapOf = (pg, id) => pg.evaluate((sel) => {
+  const can = document.querySelector(sel).getBoundingClientRect();
+  const out = { area: 0 };
+  for (const s of ['#send', '#prompt', '.composer']) {
+    const el = document.querySelector(s);
+    if (!el) continue;
+    const r = el.getBoundingClientRect();
+    const w = Math.max(0, Math.min(can.right, r.right) - Math.max(can.left, r.left));
+    const h = Math.max(0, Math.min(can.bottom, r.bottom) - Math.max(can.top, r.top));
+    out[s] = Math.round(w * h);
+    out.area += out[s];
+  }
+  const comp = document.querySelector('.composer');
+  out.gap = comp ? Math.round(comp.getBoundingClientRect().top - can.bottom) : null;
+  return out;
+}, canSel(id));
+
+/**
+ * WCAG contrast of every visible text element matching `sels`, with real
+ * compositing: translucent backgrounds are layered down to the first opaque
+ * ancestor and element/ancestor opacity is applied to the text colour.
+ * `backdrops` (hex list) = worst-case surfaces behind the element (for text on the can).
+ */
+const contrastAudit = (pg, sels, backdrops) => pg.evaluate(({ sels, backdrops }) => {
+  const parse = (v) => {
+    const m = v && v.match(/rgba?\(([^)]+)\)/);
+    if (!m) return null;
+    const p = m[1].split(/[\s,/]+/).filter(Boolean).map(parseFloat);
+    return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1];
+  };
+  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).concat(1);
+  const over = (fg, bg) => [0, 1, 2].map((i) => fg[i] * fg[3] + bg[i] * (1 - fg[3])).concat(1);
+  const lum = ([r, g, b]) => { const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+  const ratio = (a, b) => { const A = lum(a), B = lum(b); return (Math.max(A, B) + 0.05) / (Math.min(A, B) + 0.05); };
+  const rows = [];
+  for (const sel of sels) {
+    for (const el of document.querySelectorAll(sel)) {
+      if (!el.getClientRects().length || !(el.textContent || '').trim()) continue;
+      const cs = getComputedStyle(el);
+      if (cs.visibility === 'hidden') continue;
+      let opacity = 1, layers = [], opaque = null;
+      for (let cur = el; cur && cur.nodeType === 1; cur = cur.parentElement) {
+        const c = getComputedStyle(cur);
+        opacity *= parseFloat(c.opacity);
+        if (!opaque) {
+          const bg = parse(c.backgroundColor);
+          if (bg && bg[3] > 0) { if (bg[3] >= 1) opaque = bg; else layers.push(bg); }
+        }
+      }
+      const bases = backdrops && backdrops.length ? backdrops.map(hex) : [opaque || [255, 255, 255, 1]];
+      const fg0 = parse(cs.color);
+      let worst = 99;
+      for (const base of bases) {
+        let bg = base;
+        for (let i = layers.length - 1; i >= 0; i--) bg = over(layers[i], bg);
+        const fg = over([fg0[0], fg0[1], fg0[2], fg0[3] * opacity], bg);
+        worst = Math.min(worst, ratio(fg, bg));
+      }
+      const size = parseFloat(cs.fontSize), bold = parseInt(cs.fontWeight, 10) >= 700;
+      const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
+      rows.push({ sel, text: el.textContent.trim().slice(0, 24), ratio: +worst.toFixed(2), need, pass: worst >= need });
+    }
+  }
+  return rows;
+}, { sels, backdrops: backdrops || null });
+const auditSummary = (rows) => {
+  const fails = rows.filter((r) => !r.pass);
+  assert(rows.length, 'no text sampled');
+  assert(!fails.length, 'contrast fails: ' + fails.map((f) => `${f.sel} "${f.text}" ${f.ratio}<${f.need}`).join('; '));
+  return Math.min(...rows.map((r) => r.ratio)).toFixed(2);
+};
+// Behind text on the can: bare metal highlight + every brand's liquid colours.
+const CAN_BACKDROPS = ['#efefef', '#d0d0d0', '#e63950', '#8b0a1a', '#d97757', '#8b4513', '#10a37f', '#0a5c48', '#4285f4', '#174ea6',
+  '#20808d', '#0e4b53', '#4d6bfe', '#22359c', '#fa520f', '#9b2c00', '#0078d4', '#003e6b', '#0866ff', '#03307f'];
+const sendToTab = (pg, urlPattern, msg) => pg.evaluate(async ({ urlPattern, msg }) => {
+  const tabs = await chrome.tabs.query({ url: urlPattern });
+  const newest = tabs.sort((a, b) => b.id - a.id)[0]; // the page the test just opened
+  return chrome.tabs.sendMessage(newest.id, msg);
+}, { urlPattern, msg });
+/** Collect the liquid clip's y every frame for `ms` while `trigger` runs. */
+async function sampleLiquid(pg, id, ms, trigger) {
+  const sampling = pg.evaluate(({ sel, ms }) => new Promise((resolve) => {
+    const rect = document.querySelector(sel + ' .zg-liquid-rect');
+    const ys = [];
+    const t0 = performance.now();
+    const tick = (now) => { ys.push(+rect.getAttribute('y')); if (now - t0 < ms) requestAnimationFrame(tick); else resolve({ ys, target: +rect.getAttribute('data-zg-target-y') }); };
+    requestAnimationFrame(tick);
+  }), { sel: canSel(id), ms });
+  await sleep(50);
+  await trigger();
+  return sampling;
+}
 
 async function site(env, url) {
   const pg = await env.ctx.newPage();
@@ -833,6 +943,203 @@ await check('Auto theme follows the system colour scheme', async () => {
   await pop.close();
 });
 
+area('UI polish: composer overlap / contrast / motion / a11y');
+await check('Overlap: the can never covers the message box or Send (4 providers × 2 bottom corners, 360px viewport, tall composer)', async () => {
+  const out = [];
+  for (const corner of ['bottom-right', 'bottom-left']) {
+    await send(ext, { type: 'SAVE_SETTINGS', payload: { canPosition: corner } });
+    for (const [host, id] of [['grok.com', 'grok'], ['claude.ai', 'claude'], ['chatgpt.com', 'chatgpt'], ['gemini.google.com', 'gemini']]) {
+      const pg = await env.ctx.newPage();
+      await pg.goto(`https://${host}/zg-composer`);
+      await pg.evaluate((pid) => { localStorage.removeItem('zeroGrokCanPos_' + pid); localStorage.removeItem('zeroGrokCanMini_' + pid); }, id);
+      await pg.reload();
+      await pg.waitForSelector(canSel(id));
+      await waitFor(async () => new RegExp('zg-pos-' + corner).test(await pg.getAttribute(canSel(id), 'class')), { msg: id + ' at ' + corner });
+      const ov = await waitFor(async () => { const o = await overlapOf(pg, id); return o.area === 0 ? o : null; }, { timeout: 4000, msg: `${id} ${corner} overlap 0 (got ${JSON.stringify(await overlapOf(pg, id))})` });
+      assert(ov.gap >= 8, `${id} ${corner}: gap above composer ${ov.gap}px`);
+      out.push(`${id}/${corner}:gap ${ov.gap}`);
+      if (id === 'grok' && corner === 'bottom-right') {
+        await pg.setViewportSize({ width: 360, height: 720 });
+        const small = await waitFor(async () => { const o = await overlapOf(pg, id); return o.area === 0 ? o : null; }, { timeout: 4000, msg: 'overlap 0 at 360px' });
+        out.push('grok/360px:gap ' + small.gap);
+        await pg.setViewportSize({ width: 1280, height: 800 });
+        await pg.goto('https://grok.com/zg-composer-tall');
+        await pg.waitForSelector(canSel('grok'));
+        const tall = await waitFor(async () => { const o = await overlapOf(pg, id); return o.area === 0 ? o : null; }, { timeout: 4000, msg: 'overlap 0 above a tall composer' });
+        assert(tall.gap >= 8 && tall.gap <= 20, 'tall composer gap ' + tall.gap);
+        out.push('grok/tall:gap ' + tall.gap);
+      }
+      await pg.close();
+    }
+  }
+  await send(ext, { type: 'SAVE_SETTINGS', payload: { canPosition: 'bottom-right' } });
+  return out.join(', ');
+});
+
+await check('Contrast: popup text is WCAG AA in light and dark (warn/crit %, chips, Refresh button)', async () => {
+  const now = Date.now();
+  await store(ext, { zeroGrokUsage: { byProvider: {
+    grok: { provider: 'grok', remainingPercent: 30, usedPercent: 70, source: 'rate-limits', updatedAt: now, resetAt: now + 3 * 3600000 },
+    claude: { provider: 'claude', remainingPercent: 8, usedPercent: 92, source: 'org-usage', updatedAt: now },
+    chatgpt: { provider: 'chatgpt', remainingPercent: 80, usedPercent: 20, source: 'estimate', updatedAt: now },
+    gemini: { provider: 'gemini', remainingPercent: 65, usedPercent: 35, source: 'usage-page', updatedAt: now }
+  } }, zeroGrokHealth: {} });
+  const sels = ['h1', '.sub', '.pc-name', '.pc-pct', '.conf', '.pc-sub', '.pc-forecast', '.chart-caption', '.actions button', '.privacy', '.seg button', '.history-head h2'];
+  const mins = [];
+  for (const theme of ['light', 'dark']) {
+    await send(ext, { type: 'SAVE_SETTINGS', payload: { theme } });
+    const pop = await extPage(env, '/popup/popup.html');
+    await pop.waitForSelector('.pc-pct.critical');
+    await pop.waitForSelector('.pc-pct.warn');
+    const rows = await contrastAudit(pop, sels);
+    assert(rows.some((r) => r.sel === '.pc-pct' && r.text === '30%') && rows.some((r) => r.sel === '.actions button'), 'sampled warn % + buttons');
+    mins.push(theme + ' min ' + auditSummary(rows));
+    // bars use the same level colours as the panel, scaled with transform
+    const bar = await pop.evaluate(() => {
+      const b = document.querySelector('.provider-card[data-provider="claude"] .bar');
+      const cs = getComputedStyle(b);
+      return { cls: b.className, bg: cs.backgroundColor, tr: cs.transitionProperty, crit: getComputedStyle(document.documentElement).getPropertyValue('--zg-crit-bar').trim() };
+    });
+    assert(/critical/.test(bar.cls) && bar.bg === 'rgb(231, 76, 60)' && bar.crit === '#e74c3c', 'popup bar colour ' + JSON.stringify(bar));
+    assert(/transform/.test(bar.tr) && !/width/.test(bar.tr), 'popup bar transitions ' + bar.tr);
+    await waitFor(async () => (await pop.evaluate(() => new DOMMatrix(getComputedStyle(document.querySelector('.provider-card[data-provider="claude"] .bar')).transform).a)) === 0.08, { msg: 'claude bar scaleX(0.08)' });
+    await pop.close();
+  }
+  await send(ext, { type: 'SAVE_SETTINGS', payload: { theme: 'auto' } });
+  return mins.join(', ');
+});
+
+await check('Contrast: panel text and the % / countdown on the can are WCAG AA (light + dark)', async () => {
+  const mins = [];
+  mock.grok = 'free';
+  for (const theme of ['light', 'dark']) {
+    await send(ext, { type: 'SAVE_SETTINGS', payload: { theme } });
+    const g = await env.ctx.newPage();
+    await g.goto('https://grok.com/');
+    await g.waitForSelector(canSel('grok'));
+    await waitFor(async () => (await canText(g, 'grok')) === '30%', { msg: 'grok 30%' });
+    await waitFor(async () => new RegExp('zg-theme-' + theme).test(await g.getAttribute(canSel('grok'), 'class')), { msg: 'can ' + theme });
+    await g.click(canSel('grok') + ' .zg-percent');
+    await g.locator('#zero-grok-panel-grok.zg-open').waitFor();
+    await waitFor(async () => (await g.evaluate(() => getComputedStyle(document.querySelector('#zero-grok-panel-grok')).opacity)) === '1', { msg: 'panel opaque' });
+    const rows = await contrastAudit(g, ['#zero-grok-panel-grok .zg-panel-header span', '.zg-big-percent', '.zg-label', '.zg-conf', '.zg-updated', '.zg-reset', '.zg-forecast', '.zg-bd-label', '.zg-bd-val', '.zg-status', '.zg-btn', '.zg-close']);
+    mins.push(theme + ' panel min ' + auditSummary(rows));
+    const can = await contrastAudit(g, [canSel('grok') + ' .zg-percent', canSel('grok') + ' .zg-secondary'], CAN_BACKDROPS);
+    assert(can.length === 2, 'can text sampled ' + can.length);
+    mins.push(theme + ' can min ' + auditSummary(can));
+    const px = await g.evaluate((sel) => getComputedStyle(document.querySelector(sel + ' .zg-secondary')).fontSize, canSel('grok'));
+    assert(px === '11px', 'countdown size ' + px);
+    const barNow = () => g.evaluate(() => { const b = document.querySelector('#zero-grok-panel-grok .zg-bar'); return { a: new DOMMatrix(getComputedStyle(b).transform).a, bg: getComputedStyle(b).backgroundColor }; });
+    const bar = await waitFor(async () => { const b = await barNow(); return Math.abs(b.a - 0.3) < 0.001 && b.bg === 'rgb(243, 156, 18)' ? b : null; }, { timeout: 3000, msg: 'panel bar scaleX(0.3) in warn colour' }).catch(async (e) => { throw new Error(e.message + ' ' + JSON.stringify(await barNow())); });
+    await g.close();
+  }
+  await send(ext, { type: 'SAVE_SETTINGS', payload: { theme: 'auto' } });
+  return mins.join(', ');
+});
+
+await check('Panel a11y: closed = hidden + inert + aria-hidden; opens with opacity/transform; Tab is trapped; Escape returns focus to the can', async () => {
+  const g = await env.ctx.newPage();
+  await g.goto('https://grok.com/');
+  await g.waitForSelector(canSel('grok'));
+  await waitFor(async () => (await canText(g, 'grok')) === '30%', { msg: 'grok 30%' });
+  await waitFor(() => g.locator('#zero-grok-panel-grok').count(), { msg: 'panel pre-built at idle' });
+  const closed = await g.evaluate(() => { const p = document.querySelector('#zero-grok-panel-grok'); const cs = getComputedStyle(p); return { inert: p.hasAttribute('inert'), hidden: p.getAttribute('aria-hidden'), vis: cs.visibility, display: cs.display, op: cs.opacity, tp: cs.transitionProperty }; });
+  assert(closed.inert && closed.hidden === 'true' && closed.vis === 'hidden' && closed.display !== 'none' && closed.op === '0', 'closed ' + JSON.stringify(closed));
+  assert(/opacity/.test(closed.tp) && /transform/.test(closed.tp), 'transitions ' + closed.tp);
+  await g.focus(canSel('grok'));
+  await g.keyboard.press('Enter');
+  await g.locator('#zero-grok-panel-grok.zg-open').waitFor();
+  const open = await g.evaluate(() => { const p = document.querySelector('#zero-grok-panel-grok'); return { inert: p.hasAttribute('inert'), hidden: p.hasAttribute('aria-hidden'), focus: document.activeElement.className, expanded: document.querySelector('.zg-can-root[data-provider="grok"]').getAttribute('aria-expanded') }; });
+  assert(!open.inert && !open.hidden && open.focus === 'zg-close' && open.expanded === 'true', 'open ' + JSON.stringify(open));
+  for (let i = 0; i < 8; i++) {
+    await g.keyboard.press('Tab');
+    assert(await g.evaluate(() => document.querySelector('#zero-grok-panel-grok').contains(document.activeElement)), 'focus left the panel on Tab ' + (i + 1));
+  }
+  await g.focus('#zero-grok-panel-grok .zg-close');
+  await g.keyboard.press('Shift+Tab');
+  assert(await g.evaluate(() => document.activeElement.textContent === 'Hide on this site'), 'Shift+Tab wraps to the last control');
+  const ring = await g.evaluate(() => getComputedStyle(document.activeElement).outlineStyle);
+  assert(ring === 'solid', 'visible focus ring: ' + ring);
+  await g.keyboard.press('Escape');
+  await waitFor(async () => !(await g.locator('#zero-grok-panel-grok.zg-open').count()), { msg: 'closed on Escape' });
+  const after = await g.evaluate(() => ({ focus: document.activeElement.classList.contains('zg-can-root'), inert: document.querySelector('#zero-grok-panel-grok').hasAttribute('inert') }));
+  assert(after.focus && after.inert, 'focus back on the can + inert ' + JSON.stringify(after));
+  await g.close();
+});
+
+await check('Motion: liquid slides (rAF), can→ring morph animates (WAAPI), minimized ring is 28px with an expand tooltip', async () => {
+  await send(ext, { type: 'SAVE_SETTINGS', payload: { reduceMotion: false } });
+  const g = await env.ctx.newPage();
+  await g.goto('https://grok.com/');
+  await g.waitForSelector(canSel('grok'));
+  const t0 = Date.now();
+  await waitFor(async () => (await canText(g, 'grok')) === '30%', { msg: 'grok 30%' });
+  await sleep(Math.max(0, 4800 - (Date.now() - t0))) // let Grok's start-up scrapes (1.2s, 4s) finish);
+  const s = await sampleLiquid(g, 'grok', 1200, () => sendToTab(ext, 'https://grok.com/*', { type: 'USAGE_PUSH', payload: { provider: 'grok', remainingPercent: 80, usedPercent: 20, source: 'rate-limits' } }));
+  const distinct = new Set(s.ys.map((y) => y.toFixed(1))).size;
+  assert(s.ys.some((y) => Math.abs(y - 37.6) < 0.01), 'reached the pushed level');
+  assert(Math.abs(s.target - 37.6) < 0.01 && distinct >= 8 && Math.abs(s.ys[s.ys.length - 1] - s.target) < 0.01, `liquid tween: ${distinct} steps, end ${s.ys[s.ys.length - 1]} target ${s.target}`);
+  await g.hover(canSel('grok'));
+  await g.click(canSel('grok') + ' .zg-mini-btn');
+  const anims = await g.evaluate(() => document.getAnimations().filter((a) => !(a instanceof CSSAnimation) && !(a instanceof CSSTransition)).length);
+  await waitFor(async () => /zg-mini/.test(await g.getAttribute(canSel('grok'), 'class')), { msg: 'mini' });
+  await sleep(300);
+  const box = await g.locator(canSel('grok')).boundingBox();
+  assert(anims >= 1, 'morph used WAAPI animations: ' + anims);
+  assert(Math.round(box.width) === 28 && Math.round(box.height) === 28, 'ring size ' + JSON.stringify(box));
+  const title = await g.getAttribute(canSel('grok'), 'title');
+  assert(/click to expand/.test(title), 'ring tooltip ' + title);
+  await g.click(canSel('grok'));
+  await waitFor(async () => !/zg-mini/.test(await g.getAttribute(canSel('grok'), 'class')), { msg: 'expanded' });
+  await g.close();
+  return `${distinct} liquid frames, ${anims} morph animation(s)`;
+});
+
+for (const mode of ['OS prefers-reduced-motion', 'Reduce motion setting']) {
+  await check(`Reduced motion (${mode}): liquid jumps, no morph/fizz, panel + bars have no transitions, halo is static`, async () => {
+    const os = mode.startsWith('OS');
+    await send(ext, { type: 'SAVE_SETTINGS', payload: { reduceMotion: !os } });
+    const g = await env.ctx.newPage();
+    await g.emulateMedia({ reducedMotion: os ? 'reduce' : 'no-preference' });
+    const t0 = Date.now();
+    await g.goto('https://grok.com/');
+    await g.waitForSelector(canSel('grok'));
+    await waitFor(async () => /%/.test(await canText(g, 'grok')) && (await canText(g, 'grok')) !== '--%', { msg: 'reading' });
+    await sleep(Math.max(0, 4800 - (Date.now() - t0))); // start-up scrapes would overwrite pushed readings
+    if (!os) await waitFor(async () => /zg-reduce-motion/.test(await g.getAttribute(canSel('grok'), 'class')), { msg: 'reduce class' });
+    const s = await sampleLiquid(g, 'grok', 500, () => sendToTab(ext, 'https://grok.com/*', { type: 'USAGE_PUSH', payload: { provider: 'grok', remainingPercent: 15, usedPercent: 85, source: 'rate-limits' } }));
+    const moving = s.ys.filter((y) => Math.abs(y - s.target) > 0.01 && Math.abs(y - s.ys[0]) > 0.01);
+    assert(!moving.length && Math.abs(s.ys[s.ys.length - 1] - s.target) < 0.01, 'liquid must jump: ' + moving.slice(0, 5).join(','));
+    await g.hover(canSel('grok'));
+    await g.click(canSel('grok') + ' .zg-mini-btn');
+    const anims = await g.evaluate(() => document.getAnimations().filter((a) => !(a instanceof CSSAnimation) && !(a instanceof CSSTransition)).length);
+    assert(anims === 0, 'morph animations with reduced motion: ' + anims);
+    assert(/zg-mini/.test(await g.getAttribute(canSel('grok'), 'class')), 'minimized immediately');
+    await g.click(canSel('grok'));
+    await sendToTab(ext, 'https://grok.com/*', { type: 'USAGE_PUSH', payload: { provider: 'grok', remainingPercent: 0, usedPercent: 100, source: 'rate-limits' } });
+    await waitFor(async () => /zg-at-limit/.test(await g.getAttribute(canSel('grok'), 'class')), { msg: 'at limit' });
+    await sendToTab(ext, 'https://grok.com/*', { type: 'REFILL_POP', provider: 'grok' });
+    await sleep(500);
+    const st = await g.evaluate((sel) => {
+      const c = document.querySelector(sel);
+      const halo = getComputedStyle(c, '::before');
+      return { fizz: document.querySelectorAll('.zg-fizz-particle').length, can: getComputedStyle(c).animationName, halo: halo.animationName, haloOp: halo.opacity };
+    }, canSel('grok'));
+    assert(st.fizz === 0 && st.can === 'none' && st.halo === 'none' && +st.haloOp > 0.5, 'effects ' + JSON.stringify(st));
+    await g.click(canSel('grok') + ' .zg-percent');
+    await g.locator('#zero-grok-panel-grok.zg-open').waitFor();
+    const tr = await g.evaluate(() => ({
+      panel: getComputedStyle(document.querySelector('#zero-grok-panel-grok')).transitionDuration,
+      bar: getComputedStyle(document.querySelector('#zero-grok-panel-grok .zg-bar')).transitionDuration,
+      op: getComputedStyle(document.querySelector('#zero-grok-panel-grok')).opacity
+    }));
+    assert(tr.panel.split(',').every((d) => parseFloat(d) === 0) && tr.bar.split(',').every((d) => parseFloat(d) === 0) && tr.op === '1', 'transitions ' + JSON.stringify(tr));
+    await g.close();
+    await send(ext, { type: 'SAVE_SETTINGS', payload: { reduceMotion: false } });
+    mock.grok = 'free';
+  });
+}
+
 area('First-run setup');
 await check('Onboarding page opens automatically on first install', async () => {
   assert(env.onboardingOpened, 'onboarding tab did not open on install');
@@ -889,14 +1196,16 @@ await env.ctx.close();
 
 area('Optional providers');
 // ---- Optional providers: test copy where the optional hosts are pre-granted
-await check('Optional providers (Perplexity counter, DeepSeek banner, Copilot estimate) via runtime-registered scripts', async () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'zg-ext-opt-'));
-  fs.cpSync(EXT_SRC, tmp, { recursive: true });
-  const mf = JSON.parse(fs.readFileSync(path.join(tmp, 'manifest.json'), 'utf8'));
+const optTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'zg-ext-opt-'));
+fs.cpSync(EXT_SRC, optTmp, { recursive: true });
+{
+  const mf = JSON.parse(fs.readFileSync(path.join(optTmp, 'manifest.json'), 'utf8'));
   mf.host_permissions = [...mf.host_permissions, ...mf.optional_host_permissions];
-  fs.writeFileSync(path.join(tmp, 'manifest.json'), JSON.stringify(mf, null, 2));
-  const env2 = await launch(tmp, 'opt');
-  try {
+  fs.writeFileSync(path.join(optTmp, 'manifest.json'), JSON.stringify(mf, null, 2));
+}
+const env2 = await launch(optTmp, 'opt');
+await check('Optional providers (Perplexity counter, DeepSeek banner, Copilot estimate) via runtime-registered scripts', async () => {
+  {
     const e = await extPage(env2, '/popup/popup.html');
     await send(e, { type: 'SAVE_SETTINGS', payload: { enablePerplexity: true, enableDeepseek: true, enableCopilot: true, enableMistral: true, enableMetaai: true, onboardingComplete: true } });
     const ids = await waitFor(async () => {
@@ -939,11 +1248,31 @@ await check('Optional providers (Perplexity counter, DeepSeek banner, Copilot es
     // Disabling a provider unregisters its scripts.
     await send(e, { type: 'SAVE_SETTINGS', payload: { enableCopilot: false } });
     await waitFor(async () => !(await env2.sw.evaluate(() => chrome.scripting.getRegisteredContentScripts().then((l) => l.some((x) => x.id === 'zg-copilot')))), { msg: 'copilot unregistered' });
+    await send(e, { type: 'SAVE_SETTINGS', payload: { enableCopilot: true } });
     return ids.filter((x) => x.startsWith('zg-') && !x.startsWith('zg-hook')).join(', ');
-  } finally {
-    await env2.ctx.close();
   }
 });
+
+await check('Overlap: optional providers keep the can clear of the message box too (bottom-right + bottom-left)', async () => {
+  const e = await extPage(env2, '/popup/popup.html');
+  await waitFor(async () => (await env2.sw.evaluate(() => chrome.scripting.getRegisteredContentScripts().then((l) => l.map((x) => x.id)))).includes('zg-copilot'), { msg: 'copilot registered again' });
+  const out = [];
+  for (const corner of ['bottom-right', 'bottom-left']) {
+    await send(e, { type: 'SAVE_SETTINGS', payload: { canPosition: corner } });
+    for (const [host, id] of [['www.perplexity.ai', 'perplexity'], ['chat.deepseek.com', 'deepseek'], ['chat.mistral.ai', 'mistral'], ['copilot.microsoft.com', 'copilot'], ['www.meta.ai', 'metaai']]) {
+      const pg = await env2.ctx.newPage();
+      await pg.goto(`https://${host}/zg-composer`);
+      await pg.waitForSelector(canSel(id), { timeout: 10000 });
+      await waitFor(async () => new RegExp('zg-pos-' + corner).test(await pg.getAttribute(canSel(id), 'class')), { msg: id + ' at ' + corner });
+      const ov = await waitFor(async () => { const o = await overlapOf(pg, id); return o.area === 0 ? o : null; }, { timeout: 4000, msg: `${id} ${corner} overlap 0 (got ${JSON.stringify(await overlapOf(pg, id))})` });
+      out.push(`${id}/${corner}:gap ${ov.gap}`);
+      await pg.close();
+    }
+  }
+  await e.close();
+  return out.join(', ');
+});
+await env2.ctx.close();
 
 
 area('i18n (en / hi)');
@@ -958,10 +1287,23 @@ await check('i18n: Hindi browser locale renders the Hindi popup and options', as
     assert(sub === 'सारे AI का उपयोग एक नज़र में', `ui=${lang} subtitle=${sub}`);
     assert((await pg.locator('#refresh').textContent()) === 'सब रीफ़्रेश करें');
     await pg.screenshot({ path: path.join(ART, 'v15-popup-hi.png'), fullPage: true });
+    assert((await pg.locator('.seg button[data-days="7"]').textContent()) === '7 दिन', 'range button');
     const op = await extPage(env3, '/options/options.html');
     await op.waitForSelector('#provider-list input');
     assert((await op.locator('#save').textContent()).trim() === 'सेटिंग सहेजें');
-    return 'ui=' + lang;
+    assert((await op.title()) === 'Zero Grok विकल्प', 'options title ' + (await op.title()));
+    // content scripts on a provider page are localized too (can label + panel)
+    const g = await env3.ctx.newPage();
+    await g.goto('https://grok.com/');
+    await g.waitForSelector(canSel('grok'));
+    await waitFor(async () => /बचा|उपयोग मीटर/.test((await g.getAttribute(canSel('grok'), 'aria-label')) || ''), { msg: 'hindi can label' });
+    await g.click(canSel('grok') + ' .zg-percent');
+    const p = g.locator('#zero-grok-panel-grok.zg-open');
+    await p.waitFor();
+    const btns = await p.locator('.zg-btn').allTextContents();
+    assert(btns.includes('रीफ़्रेश') && !btns.includes('Refresh'), 'panel buttons ' + btns.join('|'));
+    await g.screenshot({ path: path.join(ART, 'v15-grok-panel-hi.png') });
+    return 'ui=' + lang + ', panel: ' + btns.join(' / ');
   } finally {
     await env3.ctx.close();
   }

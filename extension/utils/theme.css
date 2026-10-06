@@ -1,34 +1,27 @@
-/* Shared light/dark tokens for extension pages. Follows the OS unless the user picks a theme. */
+/*
+ * Page-level aliases for extension pages. All values come from utils/tokens.css
+ * (load it first, and put class="zg-page" on <html>); the same tokens drive the
+ * on-page can and panel, so popup and panel always match.
+ * Follows the OS unless the user picks a theme (data-theme on <html>).
+ */
 :root {
   color-scheme: light dark;
-  --bg: #f6f7f9; --card: #ffffff; --text: #1f2328; --muted: #5f6670; --line: rgba(0,0,0,0.08);
-  --accent: #c41e3a; --ok: #27ae60; --warn: #f39c12; --crit: #e74c3c; --chip: rgba(0,0,0,0.06);
-  --btn: #e9ecef; --btn-text: #222; --info: rgba(52,152,219,0.12);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #151517; --card: #222226; --text: #f2f2f3; --muted: #a3a7ad; --line: rgba(255,255,255,0.1);
-    --chip: rgba(255,255,255,0.08); --btn: #2f2f35; --btn-text: #eee; --info: rgba(52,152,219,0.2);
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #151517; --card: #222226; --text: #f2f2f3; --muted: #a3a7ad; --line: rgba(255,255,255,0.1);
-  --chip: rgba(255,255,255,0.08); --btn: #2f2f35; --btn-text: #eee; --info: rgba(52,152,219,0.2);
+  --bg: var(--zg-bg); --card: var(--zg-surface); --text: var(--zg-text); --muted: var(--zg-muted); --line: var(--zg-line);
+  --accent: var(--zg-accent); --accent-text: var(--zg-accent-text); --chip: var(--zg-chip); --track: var(--zg-track);
+  --btn: var(--zg-btn); --btn-text: var(--zg-btn-text); --info: var(--zg-info);
+  /* text colours (AA on cards) */
+  --ok: var(--zg-ok-text); --warn: var(--zg-warn-text); --crit: var(--zg-crit-text);
+  /* fills (bars, dots) */
+  --ok-bar: var(--zg-ok-bar); --warn-bar: var(--zg-warn-bar); --crit-bar: var(--zg-crit-bar);
 }
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { transition: none !important; animation: none !important; }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 .conf { display: inline-block; padding: 0 6px; border-radius: 99px; font-size: 10px; font-weight: 600; background: var(--chip); color: var(--muted); }
-.conf-official { background: rgba(39,174,96,0.16); color: #1e8449; }
-.conf-page { background: rgba(52,152,219,0.16); color: #2471a3; }
-.conf-estimate { background: rgba(243,156,18,0.18); color: #9a6200; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .conf-official { color: #7be3a5; }
-  :root:not([data-theme="light"]) .conf-page { color: #8cc8f2; }
-  :root:not([data-theme="light"]) .conf-estimate { color: #ffcf7a; }
+.conf-official { background: var(--zg-official-bg); color: var(--zg-official-text); }
+.conf-page { background: var(--zg-page-bg); color: var(--zg-page-text); }
+.conf-estimate { background: var(--zg-estimate-bg); color: var(--zg-estimate-text); }
+button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--zg-focus); outline-offset: 2px;
 }
-:root[data-theme="dark"] .conf-official { color: #7be3a5; }
-:root[data-theme="dark"] .conf-page { color: #8cc8f2; }
-:root[data-theme="dark"] .conf-estimate { color: #ffcf7a; }
-button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid #4c9ffe; outline-offset: 2px; }

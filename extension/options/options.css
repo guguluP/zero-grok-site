@@ -22,10 +22,16 @@ button { padding: 9px 16px; background: var(--accent); color: #fff; border: none
 button.secondary { background: var(--btn); color: var(--btn-text); }
 button.danger { color: var(--crit); }
 .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-.savebar { position: sticky; bottom: 0; padding: 12px 0; background: var(--bg); display: flex; align-items: center; gap: 12px; }
+.savebar {
+  position: sticky; bottom: 0; z-index: 5;
+  margin: 4px -20px 14px; padding: 12px 20px;
+  background: var(--bg); border-top: 1px solid var(--line);
+  box-shadow: 0 -6px 12px -8px rgba(0, 0, 0, 0.18);
+  display: flex; align-items: center; gap: 12px;
+}
 .saved { color: var(--ok); font-size: 13px; }
 .links { font-size: 13px; }
-.links a { color: var(--accent); }
+.links a { color: var(--accent-text); }
 .provider-list { display: grid; gap: 6px; margin-top: 6px; }
 .prov { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); }
 .prov label { margin: 0; font-weight: 600; display: flex; align-items: center; gap: 8px; }

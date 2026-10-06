@@ -73,7 +73,7 @@ export function optionalScriptFor(id) {
       id: 'zg-' + id,
       matches: p.hosts,
       js: ['utils/shared.js', 'content/can-fx.js', 'content/can-ui.js', 'content/provider-core.js', 'content/' + id + '.js'],
-      css: ['content/content.css'],
+      css: ['utils/tokens.css', 'content/content.css'],
       runAt: 'document_idle'
     }
   ];

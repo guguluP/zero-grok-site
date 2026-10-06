@@ -40,6 +40,21 @@
 - **Health check**: after repeated failed reads you see "tracking needs an update" instead of a wrong number.
 - **Remote `selectors.json`**: a data-only file that is validated and never executed, refreshed daily. It can be turned off in Options.
 
+### UI & animation polish (from the visual review)
+- **The can no longer covers the message box or Send.** Bottom corners now sit 96px above the viewport bottom, and `avoidComposer()` (in `can-ui.js`) detects the site's composer (textarea / contenteditable / Send button and its `<form>`) and lifts the can 12px above it when it's taller. Re-checked on resize, after SPA navigation and every 2s; never pushed off-screen. Works on all 9 providers. Corner snapping now also snaps when you drop the can near its resting spot.
+- **Contrast (WCAG AA).** New shared design tokens in `utils/tokens.css`, used by the popup, options, onboarding *and* the on-page panel. Text colours are separate from bar colours: warn text `#8f5400`, critical `#b8352a`, ok `#1a7a43` (light) and `#ffb347` / `#ff8a80` / `#5fd68f` (dark). Refresh button is `#1a7a43` with white text (5.37:1). Confidence chips, muted text and the panel no longer use `opacity` to dim text. The % on the can and the countdown sit on a dark pill, so they stay ≥ 4.5:1 over any liquid colour or bare metal. Every text token is checked in the unit tests; every rendered text is checked in the e2e tests.
+- **Panel opens and closes with a fade + scale** (opacity/transform, 220ms in / 160ms out, growing from the can's side) instead of a `display` toggle. Closed panels are `visibility:hidden`, `inert` and `aria-hidden`. Focus moves to the close button on open, Tab/Shift+Tab stay inside the panel, and Escape closes it and returns focus to the can. The panel is pre-built when the browser is idle, so the first open has no build cost.
+- **Liquid level slides** to the new value (requestAnimationFrame ease-out tween of the clip `y`) instead of jumping. The useless `transition: fill` is gone.
+- **Bars**: popup and panel bars use the same green / orange / red level colours (the brand colour stays on the dot) and animate with `transform: scaleX()` instead of `width`.
+- **Reset countdown** is 11px on a pill under the can (was 9px over the can).
+- **Minimized state** is a 28px ring (level colour, brand colour when unknown) with a white outline, a "click to expand" tooltip, and a smooth can → ring morph (Web Animations, transform/opacity only).
+- **At-limit pulse** is now an opacity/scale halo instead of an animated `filter`.
+- **Keyboard**: visible focus rings everywhere (panel, can, minimize button, pages), 24px minimize button.
+- **Hindi**: page titles, the 7d/30d range buttons, the can's label, the weekly "W" prefix and the new tooltip are translated. Note for testing: on Linux, Chrome takes its UI language from `LANGUAGE`/`LANG`; `--lang` alone doesn't change `chrome.i18n`.
+- **Share card** has a small can watermark (filled to the lowest level shown).
+- **Options**: the sticky Save bar has a top border, shadow and z-index so it doesn't blend into the sections.
+- **Reduced motion**: the setting and the OS preference both turn off the panel/bar transitions, liquid tween, ring morph, halo pulse (shown static), bubbles, pop and fizz.
+
 ### Quality
 - `tests/`:
   - unit tests (`node --test`)

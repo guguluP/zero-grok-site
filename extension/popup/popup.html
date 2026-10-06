@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="zg-page">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Zero Grok</title>
+  <link rel="stylesheet" href="../utils/tokens.css" />
   <link rel="stylesheet" href="../utils/theme.css" />
   <link rel="stylesheet" href="popup.css" />
 </head>
@@ -33,8 +34,8 @@
       <h2 data-i18n="historyTitle">History</h2>
       <select id="history-provider" data-i18n-aria="historyProvider" aria-label="Provider"></select>
       <div class="seg" role="group" data-i18n-aria="historyRange" aria-label="Range">
-        <button type="button" data-days="7" class="on">7d</button>
-        <button type="button" data-days="30">30d</button>
+        <button type="button" data-days="7" class="on" aria-pressed="true" data-i18n="range7d">7d</button>
+        <button type="button" data-days="30" aria-pressed="false" data-i18n="range30d">30d</button>
       </div>
     </div>
     <div id="chart" class="chart"></div>

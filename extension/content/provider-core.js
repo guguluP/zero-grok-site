@@ -146,7 +146,8 @@
       scraping: false,
       started: false,
       lastNavScrape: 0,
-      refillTriggered: false
+      refillTriggered: false,
+      returnFocus: null
     };
 
     const api = { id, state, scrape: () => doScrape(), render: () => render(), helpers };
@@ -171,6 +172,7 @@
       el.classList.toggle('zg-reduce-motion', !!reduce);
     }
     try { darkMq && darkMq.addEventListener('change', () => { themeClasses(state.canEl); themeClasses(state.panelEl); }); } catch (_) {}
+    try { motionMq && motionMq.addEventListener('change', () => { themeClasses(state.canEl); themeClasses(state.panelEl); }); } catch (_) {}
 
     // ---------- mounting
     function ensureMounted() {
@@ -179,11 +181,16 @@
         if (state.canEl) state.canEl.style.display = 'none';
       } else {
         if (!state.canEl) {
+          // theme / reduce-motion flags first, so the first liquid fill and pop respect them
+          global.__zgReduceMotion = state.settings.reduceMotion === true || !!(motionMq && motionMq.matches);
           state.canEl = UI.mountCan({
             provider: id, settings: state.settings, colors, label: meta.label,
+            ariaLabel: t('usageMeterLabel', [meta.label], '$1 usage meter'),
             minimizeLabel: t('minimize', null, 'Minimize'),
             onClick: () => togglePanel()
           });
+          state.canEl.addEventListener('zg-mini-change', () => render());
+          prebuildPanel();
         }
         if (!state.canEl.isConnected) {
           document.body.appendChild(state.canEl);
@@ -216,6 +223,13 @@
       }
     }
 
+    // Keep bottom-corner cans clear of the composer as the page lays out / resizes.
+    const recheckComposer = () => { if (state.canEl && state.canEl.isConnected && state.canEl.style.display !== 'none') UI.avoidComposer(state.canEl); };
+    const onResize = debounce(() => {
+      recheckComposer();
+      if (state.open) positionPanel();
+    }, 150);
+
     const onNavigate = debounce(() => {
       remount();
       if (Date.now() - state.lastNavScrape > 5000) {
@@ -228,12 +242,14 @@
       global.addEventListener('zerogrok:navigate', onNavigate);
       global.addEventListener('popstate', onNavigate);
       try { global.navigation && global.navigation.addEventListener('currententrychange', onNavigate); } catch (_) {}
+      global.addEventListener('resize', onResize, { passive: true });
       let href = location.href;
       setInterval(() => {
         if (location.href !== href) {
           href = location.href;
           onNavigate();
         }
+        recheckComposer();
       }, 2000);
     }
 
@@ -261,11 +277,12 @@
       const close = h('button', { type: 'button', class: 'zg-close', 'aria-label': t('close', null, 'Close'), text: '×' });
       close.addEventListener('click', () => togglePanel(false));
       const extra = (def.panelActions || []).map((a) => btn(a.key, a.fallback, a.onClick));
+      const titleId = 'zg-panel-title-' + id;
       const panel = h('div', {
-        id: 'zero-grok-panel-' + id, class: 'zg-panel', role: 'dialog',
-        'aria-label': t('panelTitle', [meta.label], 'Zero · $1'), 'data-provider': id
+        id: 'zero-grok-panel-' + id, class: 'zg-panel', role: 'dialog', 'aria-modal': 'false',
+        'aria-labelledby': titleId, 'data-provider': id, 'aria-hidden': 'true', inert: ''
       }, [
-        h('div', { class: 'zg-panel-header' }, [h('span', { text: t('panelTitle', [meta.label], 'Zero · $1') }), close]),
+        h('div', { class: 'zg-panel-header' }, [h('span', { id: titleId, text: t('panelTitle', [meta.label], 'Zero · $1') }), close]),
         h('div', { class: 'zg-panel-body' }, [
           els.big, els.label,
           h('div', { class: 'zg-bar-wrap' }, [els.bar]),
@@ -279,11 +296,48 @@
           extra.length ? h('div', { class: 'zg-footer' }, extra) : null
         ])
       ]);
-      panel.addEventListener('keydown', (e) => { if (e.key === 'Escape') togglePanel(false); });
+      panel.addEventListener('keydown', onPanelKeydown);
       document.body.appendChild(panel);
       state.panelEl = panel;
       themeClasses(panel);
       return panel;
+    }
+
+    /** Pre-build the (hidden) panel when the browser is idle so the first open has no build cost. */
+    function prebuildPanel() {
+      const run = () => { if (!state.panelEl && document.body && canVisible()) buildPanel(); };
+      try {
+        if (global.requestIdleCallback) global.requestIdleCallback(run, { timeout: 4000 });
+        else setTimeout(run, 1500);
+      } catch (_) { setTimeout(run, 1500); }
+    }
+
+    function focusables() {
+      const p = state.panelEl;
+      if (!p) return [];
+      return Array.from(p.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+        .filter((el) => !el.disabled && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
+    }
+
+    /** Escape closes; Tab / Shift+Tab stay inside the open panel. */
+    function onPanelKeydown(e) {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        togglePanel(false);
+        return;
+      }
+      if (e.key !== 'Tab' || !state.open) return;
+      const f = focusables();
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || !state.panelEl.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (active === last || !state.panelEl.contains(active))) {
+        e.preventDefault();
+        first.focus();
+      }
     }
 
     function positionPanel() {
@@ -301,19 +355,48 @@
       }
       p.style.left = Math.max(8, Math.min(window.innerWidth - W - 8, left)) + 'px';
       p.style.top = Math.max(8, Math.min(window.innerHeight - H - 8, top)) + 'px';
+      // grow out of (and shrink back into) the can's side
+      const fromRight = c && c.width ? c.left + c.width / 2 > window.innerWidth / 2 : true;
+      const fromBottom = c && c.width ? c.top + c.height / 2 > window.innerHeight / 2 : true;
+      p.style.transformOrigin = (fromBottom ? 'bottom ' : 'top ') + (fromRight ? 'right' : 'left');
     }
 
+    /**
+     * Open/close with an opacity + transform transition (content.css). The panel
+     * stays in the DOM; closed = visibility:hidden + inert + aria-hidden. Focus
+     * moves to the close button on open and back to where it was (or the can)
+     * on close.
+     */
     function togglePanel(force) {
       buildPanel();
+      const p = state.panelEl;
+      const was = state.open;
       state.open = force == null ? !state.open : !!force;
-      state.panelEl.classList.toggle('zg-open', state.open);
       if (state.open) {
+        if (!was) {
+          const a = document.activeElement;
+          state.returnFocus = a && a !== document.body && !p.contains(a) ? a : null;
+        }
         render();
         positionPanel();
+        p.removeAttribute('inert');
+        p.removeAttribute('aria-hidden');
+        p.classList.add('zg-open');
         refreshExtras();
-        const first = state.panelEl.querySelector('.zg-close');
+        const first = p.querySelector('.zg-close');
         try { first && first.focus({ preventScroll: true }); } catch (_) {}
+      } else {
+        if (p.contains(document.activeElement)) {
+          const back = state.returnFocus && state.returnFocus.isConnected ? state.returnFocus
+            : state.canEl && state.canEl.isConnected && state.canEl.style.display !== 'none' ? state.canEl : null;
+          try { back ? back.focus({ preventScroll: true }) : document.activeElement.blur(); } catch (_) {}
+        }
+        state.returnFocus = null;
+        p.classList.remove('zg-open');
+        p.setAttribute('aria-hidden', 'true');
+        p.setAttribute('inert', '');
       }
+      if (state.canEl) state.canEl.setAttribute('aria-expanded', String(state.open));
     }
 
     async function hideOnSite() {
@@ -340,7 +423,7 @@
       let secondary = '';
       if (!needsUpdate && d) {
         if (!atLimit && resetAt && resetAt > now) secondary = '↻ ' + S.formatDuration(resetAt - now);
-        else if (S.isNum(d.weeklyRemaining)) secondary = 'W ' + Math.round(d.weeklyRemaining) + '%';
+        else if (S.isNum(d.weeklyRemaining)) secondary = t('weeklyShort', [String(Math.round(d.weeklyRemaining))], 'W $1%');
         else if (conf === 'estimate') secondary = t('estShort', null, 'est.');
       }
       const canEl = state.canEl;
@@ -355,13 +438,17 @@
           : rem != null
             ? t('canSummary', [meta.label, String(Math.round(rem)), S.confidenceLabel(conf)], '$1: $2% left · $3')
             : t('canSummaryNoData', [meta.label], '$1: no reading yet');
-        canEl.setAttribute('aria-label', summary);
-        canEl.title = summary + (resetAt && resetAt > now ? ' · ' + t('resetsIn', [S.formatDuration(resetAt - now)], 'Resets in $1') : '');
+        const mini = canEl.classList.contains('zg-mini');
+        const expand = mini ? ' — ' + t('expandHint', null, 'click to expand') : '';
+        canEl.setAttribute('aria-label', summary + expand);
+        canEl.setAttribute('aria-expanded', String(!!state.open));
+        canEl.title = summary + (resetAt && resetAt > now ? ' · ' + t('resetsIn', [S.formatDuration(resetAt - now)], 'Resets in $1') : '') + expand;
       }
       if (!state.panelEl || !els) return;
       els.big.textContent = needsUpdate ? '?' : rem != null ? ((conf === 'estimate' ? '~' : '') + Math.round(rem) + '%') : (d && S.isNum(d.remaining) ? t('nLeft', [String(d.remaining)], '$1 left') : d && S.isNum(d.count) ? t('nSent', [String(d.count)], '$1 sent') : '--%');
       els.label.textContent = d ? (d.windowHint || t('remaining', null, 'remaining')) : t('remaining', null, 'remaining');
-      els.bar.style.width = needsUpdate || rem == null ? '0%' : rem + '%';
+      const frac = needsUpdate || rem == null ? 0 : Math.max(0, Math.min(1, rem / 100));
+      els.bar.style.transform = 'scaleX(' + frac.toFixed(4) + ')';
       els.bar.className = 'zg-bar ' + (needsUpdate ? '' : UI.levelClass(rem));
       els.conf.textContent = d ? S.confidenceLabel(conf) : '';
       els.conf.className = 'zg-conf' + (conf ? ' zg-conf-' + conf : '');

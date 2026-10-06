@@ -4,6 +4,8 @@ const t = S.t;
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const state = { usage: null, settings: null, health: {}, history: [], update: null, granted: {}, days: 7, chartProvider: null };
+/** Last rendered bar fraction per provider, so re-renders slide from the old value instead of jumping. */
+const lastFrac = {};
 
 async function load() {
   const [usage, settings, health, history, update] = await Promise.all([
@@ -24,6 +26,20 @@ function enabledProviders() {
 
 function levelClass(rem) {
   return rem == null ? '' : rem <= 10 ? 'critical' : rem <= 30 ? 'warn' : 'ok';
+}
+
+/**
+ * Usage bar: level colour (same as the on-page panel), scaled with transform:
+ * scaleX (no layout). Starts at the previously rendered value and transitions to
+ * the new one on the next frame; reduce-motion CSS turns the transition off.
+ */
+function barEl(id, rem) {
+  const frac = rem == null ? 0 : Math.max(0, Math.min(1, rem / 100));
+  const from = lastFrac[id] != null ? lastFrac[id] : 0; // first paint fills in from empty
+  lastFrac[id] = frac;
+  const bar = h('div', { class: 'bar ' + levelClass(rem), style: { transform: 'scaleX(' + from.toFixed(4) + ')' } });
+  if (from !== frac) requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.transform = 'scaleX(' + frac.toFixed(4) + ')'; }));
+  return h('div', { class: 'bar-wrap', role: 'presentation' }, [bar]);
 }
 
 function render() {
@@ -96,7 +112,7 @@ function renderCards() {
         conf ? h('span', { class: 'conf conf-' + conf, text: S.confidenceLabel(conf), title: t('confTooltip', null, 'Where this number comes from') }) : null,
         h('span', { class: 'pc-pct ' + (needsUpdate ? 'unknown' : levelClass(rem)), text: pctText })
       ]),
-      h('div', { class: 'bar-wrap' }, [h('div', { class: 'bar', style: { width: (rem == null ? 0 : rem) + '%', background: meta.color } })]),
+      barEl(meta.id, rem),
       h('div', { class: 'pc-sub', text: subParts.join(' · ') })
     ];
     if (needsUpdate) {
@@ -176,7 +192,7 @@ function drawChart() {
 document.getElementById('history-provider').addEventListener('change', (e) => { state.chartProvider = e.target.value; drawChart(); });
 document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => {
   state.days = parseInt(b.dataset.days, 10);
-  document.querySelectorAll('.seg button').forEach((x) => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.seg button').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); });
   drawChart();
 }));
 

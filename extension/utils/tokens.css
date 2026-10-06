@@ -1,0 +1,97 @@
+/*
+ * Zero Grok design tokens — the single source of colours, motion timings and
+ * surfaces for BOTH the extension pages (popup / options / onboarding, which put
+ * class="zg-page" on <html>) and the on-page can + panel (content scripts).
+ * Everything is prefixed --zg-* and scoped to our own elements, so nothing
+ * leaks into the host page.
+ *
+ * Text tokens (*-text, --zg-muted, --zg-on-primary) are checked to be
+ * >= 4.5:1 (WCAG AA, normal text) on --zg-surface and --zg-bg in both themes
+ * (tests/unit.test.mjs). *-bar tokens are for fills only, never for text.
+ */
+html.zg-page, .zg-panel, .zg-can-root {
+  --zg-bg: #f6f7f9;
+  --zg-surface: #ffffff;
+  --zg-text: #1f2328;
+  --zg-muted: #5f6670;
+  --zg-line: rgba(0, 0, 0, 0.1);
+  --zg-chip: rgba(0, 0, 0, 0.06);
+  --zg-track: rgba(0, 0, 0, 0.1);
+  --zg-btn: #e9ecef;
+  --zg-btn-text: #222222;
+  --zg-info: rgba(52, 152, 219, 0.12);
+  --zg-accent: #c41e3a;
+  --zg-accent-text: #b01a33;
+  --zg-on-accent: #ffffff;
+  --zg-primary: #1a7a43;
+  --zg-on-primary: #ffffff;
+  --zg-ok-bar: #27ae60;
+  --zg-warn-bar: #f39c12;
+  --zg-crit-bar: #e74c3c;
+  --zg-ok-text: #1a7a43;
+  --zg-warn-text: #8f5400;
+  --zg-crit-text: #b8352a;
+  --zg-official-bg: rgba(39, 174, 96, 0.16);
+  --zg-official-text: #17663a;
+  --zg-page-bg: rgba(52, 152, 219, 0.16);
+  --zg-page-text: #1b4f72;
+  --zg-estimate-bg: rgba(243, 156, 18, 0.2);
+  --zg-estimate-text: #7a4d00;
+  --zg-focus: #1a73e8;
+  /* dark translucent pill behind text drawn on top of the can (liquid / metal) */
+  --zg-pill: rgba(10, 10, 12, 0.68);
+  --zg-dur-fast: 160ms;
+  --zg-dur: 220ms;
+  --zg-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --zg-ease-in: cubic-bezier(0.4, 0, 1, 1);
+}
+
+html.zg-page[data-theme="dark"], .zg-panel.zg-theme-dark, .zg-can-root.zg-theme-dark {
+  --zg-bg: #151517;
+  --zg-surface: #1f1f23;
+  --zg-text: #f2f2f3;
+  --zg-muted: #a3a7ad;
+  --zg-line: rgba(255, 255, 255, 0.12);
+  --zg-chip: rgba(255, 255, 255, 0.08);
+  --zg-track: rgba(255, 255, 255, 0.14);
+  --zg-btn: #2f2f35;
+  --zg-btn-text: #eeeeee;
+  --zg-info: rgba(52, 152, 219, 0.2);
+  --zg-accent-text: #ff7a8c;
+  --zg-ok-text: #5fd68f;
+  --zg-warn-text: #ffb347;
+  --zg-crit-text: #ff8a80;
+  --zg-official-bg: rgba(39, 174, 96, 0.18);
+  --zg-official-text: #7be3a5;
+  --zg-page-bg: rgba(52, 152, 219, 0.18);
+  --zg-page-text: #8cc8f2;
+  --zg-estimate-bg: rgba(243, 156, 18, 0.2);
+  --zg-estimate-text: #ffcf7a;
+  --zg-focus: #8ab4f8;
+}
+
+@media (prefers-color-scheme: dark) {
+  html.zg-page:not([data-theme="light"]) {
+    --zg-bg: #151517;
+    --zg-surface: #1f1f23;
+    --zg-text: #f2f2f3;
+    --zg-muted: #a3a7ad;
+    --zg-line: rgba(255, 255, 255, 0.12);
+    --zg-chip: rgba(255, 255, 255, 0.08);
+    --zg-track: rgba(255, 255, 255, 0.14);
+    --zg-btn: #2f2f35;
+    --zg-btn-text: #eeeeee;
+    --zg-info: rgba(52, 152, 219, 0.2);
+    --zg-accent-text: #ff7a8c;
+    --zg-ok-text: #5fd68f;
+    --zg-warn-text: #ffb347;
+    --zg-crit-text: #ff8a80;
+    --zg-official-bg: rgba(39, 174, 96, 0.18);
+    --zg-official-text: #7be3a5;
+    --zg-page-bg: rgba(52, 152, 219, 0.18);
+    --zg-page-text: #8cc8f2;
+    --zg-estimate-bg: rgba(243, 156, 18, 0.2);
+    --zg-estimate-text: #ffcf7a;
+    --zg-focus: #8ab4f8;
+  }
+}

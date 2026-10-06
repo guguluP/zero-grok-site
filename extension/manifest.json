@@ -70,6 +70,7 @@
         "content/content.js"
       ],
       "css": [
+        "utils/tokens.css",
         "content/content.css"
       ],
       "run_at": "document_idle"
@@ -86,6 +87,7 @@
         "content/claude.js"
       ],
       "css": [
+        "utils/tokens.css",
         "content/content.css"
       ],
       "run_at": "document_idle"
@@ -103,6 +105,7 @@
         "content/chatgpt.js"
       ],
       "css": [
+        "utils/tokens.css",
         "content/content.css"
       ],
       "run_at": "document_idle"
@@ -119,6 +122,7 @@
         "content/gemini.js"
       ],
       "css": [
+        "utils/tokens.css",
         "content/content.css"
       ],
       "run_at": "document_idle"
