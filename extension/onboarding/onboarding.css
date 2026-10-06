@@ -113,3 +113,11 @@ footer {
   font-size: 12px;
   opacity: 0.5;
 }
+
+.prov-grid { display: grid; gap: 8px; margin-top: 10px; }
+.prov-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+.prov-row label { display: flex; align-items: center; gap: 8px; font-weight: 600; margin: 0; }
+.prov-row .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.prov-row .tag { font-size: 11px; opacity: 0.6; font-weight: 500; }
+.prov-row select { background: rgba(0,0,0,0.3); color: #f5f5f5; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 4px 6px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

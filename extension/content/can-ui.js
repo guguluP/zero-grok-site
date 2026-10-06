@@ -1,277 +1,288 @@
 /**
- * Shared Zero Grok can markup + drag/position + keyboard toggle.
- * Depends on can-fx.js (loaded first).
+ * Shared Zero Grok can: markup (built with DOM APIs, no innerHTML – safe under
+ * Trusted Types on sites like Gemini), liquid level, drag with corner snap,
+ * minimize-to-dot and per-provider unique ids.
  */
 (function (global) {
   'use strict';
+  if (global.ZeroGrokCanUI) return;
 
+  const SVG_NS = 'http://www.w3.org/2000/svg';
   const BRANDS = {
     grok: { band: ['#e31837', '#c41e3a', '#9b1020'], liquid: ['#e63950', '#8b0a1a'], label: 'GROK', subSize: 9 },
     claude: { band: ['#e8a87c', '#d97757', '#b85c38'], liquid: ['#d97757', '#8b4513'], label: 'CLAUDE', subSize: 7 },
     chatgpt: { band: ['#1a7f64', '#10a37f', '#0d8c6d'], liquid: ['#10a37f', '#0a5c48'], label: 'GPT', subSize: 9 },
-    gemini: { band: ['#5b9df9', '#4285f4', '#1a73e8'], liquid: ['#4285f4', '#174ea6'], label: 'GEMINI', subSize: 6.5 }
+    gemini: { band: ['#5b9df9', '#4285f4', '#1a73e8'], liquid: ['#4285f4', '#174ea6'], label: 'GEMINI', subSize: 6.5 },
+    perplexity: { band: ['#2ea3b0', '#20808d', '#146570'], liquid: ['#20808d', '#0e4b53'], label: 'PPLX', subSize: 8.5 },
+    deepseek: { band: ['#7189ff', '#4d6bfe', '#2f4fe0'], liquid: ['#4d6bfe', '#22359c'], label: 'DEEPSEEK', subSize: 5.2 },
+    mistral: { band: ['#ffaf00', '#fa520f', '#e10500'], liquid: ['#fa520f', '#9b2c00'], label: 'MISTRAL', subSize: 5.8 },
+    copilot: { band: ['#3aa0f3', '#0078d4', '#005a9e'], liquid: ['#0078d4', '#003e6b'], label: 'COPILOT', subSize: 5.8 },
+    metaai: { band: ['#4b8dff', '#0866ff', '#0549c4'], liquid: ['#0866ff', '#03307f'], label: 'META', subSize: 8 }
   };
 
-  function canHTML(provider) {
+  /** Tiny element builder: h('div', {class:'x'}, [child, 'text']) */
+  function h(tag, attrs, children, ns) {
+    const el = ns ? document.createElementNS(ns, tag) : document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v == null || v === false) continue;
+      if (k === 'text') el.textContent = String(v);
+      else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+      else el.setAttribute(k, String(v));
+    }
+    for (const c of children || []) {
+      if (c == null) continue;
+      el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    }
+    return el;
+  }
+  function s(tag, attrs, children) { return h(tag, attrs, children, SVG_NS); }
+
+  function gradient(id, vertical, stops) {
+    return s('linearGradient', { id, x1: '0%', y1: '0%', x2: vertical ? '0%' : '100%', y2: vertical ? '100%' : '0%' },
+      stops.map(([o, c]) => s('stop', { offset: o, 'stop-color': c })));
+  }
+
+  function buildCanSvg(provider) {
     const b = BRANDS[provider] || BRANDS.grok;
-    const uid = 'zg' + provider;
-    return `
-      <div class="zg-can-body">
-        <svg class="zg-can-svg" viewBox="0 0 64 128" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="${uid}-metal" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#2c2c2c"/>
-              <stop offset="12%" stop-color="#7a7a7a"/>
-              <stop offset="28%" stop-color="#c8c8c8"/>
-              <stop offset="42%" stop-color="#efefef"/>
-              <stop offset="55%" stop-color="#d0d0d0"/>
-              <stop offset="72%" stop-color="#9a9a9a"/>
-              <stop offset="88%" stop-color="#5a5a5a"/>
-              <stop offset="100%" stop-color="#1e1e1e"/>
-            </linearGradient>
-            <linearGradient id="${uid}-band" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stop-color="${b.band[0]}"/>
-              <stop offset="50%" stop-color="${b.band[1]}"/>
-              <stop offset="100%" stop-color="${b.band[2]}"/>
-            </linearGradient>
-            <linearGradient id="${uid}-liquid" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stop-color="${b.liquid[0]}"/>
-              <stop offset="100%" stop-color="${b.liquid[1]}"/>
-            </linearGradient>
-            <clipPath id="${uid}-liquid-clip">
-              <rect id="zg-liquid-rect" x="12" y="108" width="40" height="0" rx="4"/>
-            </clipPath>
-          </defs>
-
-          <ellipse cx="32" cy="114" rx="20" ry="4.5" fill="#3a3a3a" opacity="0.9"/>
-          <ellipse cx="32" cy="112.5" rx="18.5" ry="3.2" fill="#555"/>
-          <rect x="10" y="16" width="44" height="96" rx="6" ry="6" fill="url(#${uid}-metal)" stroke="#1a1a1a" stroke-width="0.8"/>
-
-          <g clip-path="url(#${uid}-liquid-clip)">
-            <rect x="12" y="20" width="40" height="88" class="zg-liquid" fill="url(#${uid}-liquid)"/>
-            <g class="zg-bubbles">
-              <circle class="zg-bubble" cx="22" cy="95" r="2.0" style="animation-duration:2.5s;animation-delay:0s"/>
-              <circle class="zg-bubble" cx="34" cy="98" r="1.5" style="animation-duration:3.2s;animation-delay:0.3s"/>
-              <circle class="zg-bubble" cx="28" cy="90" r="1.8" style="animation-duration:2.8s;animation-delay:0.8s"/>
-              <circle class="zg-bubble" cx="40" cy="96" r="1.3" style="animation-duration:3.5s;animation-delay:1.1s"/>
-              <circle class="zg-bubble" cx="19" cy="100" r="1.6" style="animation-duration:2.9s;animation-delay:0.5s"/>
-              <circle class="zg-bubble" cx="36" cy="85" r="1.2" style="animation-duration:3.8s;animation-delay:1.5s"/>
-              <circle class="zg-bubble" cx="25" cy="88" r="1.4" style="animation-duration:3.1s;animation-delay:1.9s"/>
-              <circle class="zg-bubble" cx="31" cy="92" r="1.1" style="animation-duration:2.6s;animation-delay:0.6s"/>
-            </g>
-          </g>
-
-          <rect x="10" y="48" width="44" height="28" fill="url(#${uid}-band)"/>
-          <ellipse cx="32" cy="16" rx="20" ry="5" fill="#c0c0c0"/>
-          <ellipse cx="32" cy="15" rx="14" ry="3.2" fill="#e8e8e8"/>
-          <ellipse cx="32" cy="14.2" rx="9" ry="1.6" fill="none" stroke="#999" stroke-width="0.7"/>
-          <rect x="30.5" y="11.5" width="3" height="3.5" rx="0.8" fill="#aaa" stroke="#777" stroke-width="0.4"/>
-
-          <text x="32" y="60" text-anchor="middle" fill="#fff" font-size="9" font-weight="900"
-                font-family="Arial Black, Helvetica, sans-serif" letter-spacing="1">ZERO</text>
-          <text x="32" y="71" text-anchor="middle" fill="#fff" font-size="${b.subSize}" font-weight="700"
-                font-family="Arial Black, Helvetica, sans-serif" letter-spacing="1">${b.label}</text>
-
-          <g class="zg-condensation">
-            <circle cx="14" cy="30" r="1.2"/>
-            <circle cx="48" cy="38" r="1.0"/>
-            <circle cx="15" cy="70" r="0.9"/>
-            <circle cx="49" cy="80" r="1.1"/>
-          </g>
-        </svg>
-        <div class="zg-percent" id="zg-percent">--%</div>
-        <div class="zg-secondary" id="zg-secondary" style="display:none"></div>
-      </div>`;
-  }
-
-  function setLiquidLevel(canEl, remainingPercent) {
-    if (!canEl) return;
-    const liquidRect = canEl.querySelector('#zg-liquid-rect');
-    const percentEl = canEl.querySelector('#zg-percent');
-    const liquid = canEl.querySelector('.zg-liquid');
-    const fullH = 88;
-    const rem = remainingPercent;
-    const h = (rem == null || !Number.isFinite(rem)) ? 0 : Math.max(0, Math.min(fullH, (rem / 100) * fullH));
-    if (liquidRect) {
-      liquidRect.setAttribute('y', String(20 + (fullH - h)));
-      liquidRect.setAttribute('height', String(h));
-    }
-    if (percentEl && !canEl.classList.contains('zg-at-limit')) {
-      if (rem == null || !Number.isFinite(rem)) {
-        percentEl.textContent = '--%';
-        percentEl.className = 'zg-percent';
-        percentEl.style.color = '#888';
-      } else {
-        percentEl.textContent = `${Math.round(rem)}%`;
-        percentEl.className = 'zg-percent ' + (rem <= 10 ? 'zg-critical' : rem <= 30 ? 'zg-warn' : 'zg-ok');
-        percentEl.style.color = '';
-      }
-    }
-    if (liquid) {
-      liquid.classList.remove('zg-ok', 'zg-warn', 'zg-critical');
-      if (rem == null || !Number.isFinite(rem)) liquid.style.fill = '';
-      else if (rem <= 10) liquid.classList.add('zg-critical');
-      else if (rem <= 30) liquid.classList.add('zg-warn');
-      else liquid.classList.add('zg-ok');
-    }
-  }
-
-  function setSecondary(canEl, text) {
-    const el = canEl?.querySelector('#zg-secondary');
-    if (!el) return;
-    if (!text) {
-      el.style.display = 'none';
-      el.textContent = '';
-      return;
-    }
-    el.style.display = 'block';
-    el.textContent = text;
-  }
-
-  function positionKey(provider) {
-    return 'zeroGrokCanPos_' + (provider || 'default');
-  }
-
-  function loadSavedPosition(provider) {
-    try {
-      const raw = localStorage.getItem(positionKey(provider));
-      if (!raw) return null;
-      return JSON.parse(raw);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  function savePosition(provider, left, top) {
-    try {
-      localStorage.setItem(positionKey(provider), JSON.stringify({ left, top }));
-    } catch (_) {}
-  }
-
-  function applyPosition(canEl, settings, provider) {
-    if (!canEl) return;
-    const saved = loadSavedPosition(provider);
-    if (saved && typeof saved.left === 'number' && typeof saved.top === 'number') {
-      canEl.style.left = saved.left + 'px';
-      canEl.style.top = saved.top + 'px';
-      canEl.style.right = 'auto';
-      canEl.style.bottom = 'auto';
-      canEl.className = canEl.className.replace(/zg-pos-\S+/g, '').trim() + ' zg-can zg-pos-custom';
-      return;
-    }
-    const pos = (settings && settings.canPosition) || 'bottom-right';
-    canEl.style.left = '';
-    canEl.style.top = '';
-    canEl.style.right = '';
-    canEl.style.bottom = '';
-    canEl.className = `zg-can zg-pos-${pos}`;
-  }
-
-  function makeDraggable(canEl, provider) {
-    if (!canEl || canEl.__zgDragBound) return;
-    canEl.__zgDragBound = true;
-    let ox = 0, oy = 0, dragging = false;
-
-    canEl.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0) return;
-      dragging = true;
-      const rect = canEl.getBoundingClientRect();
-      ox = e.clientX - rect.left;
-      oy = e.clientY - rect.top;
-      canEl.setPointerCapture(e.pointerId);
-      canEl.style.transition = 'none';
-      canEl.classList.add('zg-dragging');
-    });
-
-    canEl.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      const left = Math.max(0, Math.min(window.innerWidth - 72, e.clientX - ox));
-      const top = Math.max(0, Math.min(window.innerHeight - 150, e.clientY - oy));
-      canEl.style.left = left + 'px';
-      canEl.style.top = top + 'px';
-      canEl.style.right = 'auto';
-      canEl.style.bottom = 'auto';
-      canEl.className = canEl.className.replace(/zg-pos-\S+/g, '').trim() + ' zg-can zg-pos-custom';
-    });
-
-    canEl.addEventListener('pointerup', (e) => {
-      if (!dragging) return;
-      dragging = false;
-      canEl.classList.remove('zg-dragging');
-      canEl.style.transition = '';
-      const rect = canEl.getBoundingClientRect();
-      savePosition(provider, rect.left, rect.top);
-    });
-  }
-
-  function bindKeyboardToggle(canEl, settings) {
-    if (global.__zgKeyToggleBound) return;
-    global.__zgKeyToggleBound = true;
-    document.addEventListener('keydown', (e) => {
-      if (!(e.altKey && (e.key === 'u' || e.key === 'U'))) return;
-      e.preventDefault();
-      if (!canEl) return;
-      const hidden = canEl.style.display === 'none' || canEl.classList.contains('zg-user-hidden');
-      if (hidden) {
-        canEl.style.display = 'flex';
-        canEl.classList.remove('zg-user-hidden');
-      } else {
-        canEl.classList.add('zg-user-hidden');
-        canEl.style.display = 'none';
-      }
-    });
+    const uid = 'zg-' + provider;
+    const bubbles = [[22, 95, 2.0, 2.5, 0], [34, 98, 1.5, 3.2, 0.3], [28, 90, 1.8, 2.8, 0.8], [40, 96, 1.3, 3.5, 1.1],
+      [19, 100, 1.6, 2.9, 0.5], [36, 85, 1.2, 3.8, 1.5], [25, 88, 1.4, 3.1, 1.9], [31, 92, 1.1, 2.6, 0.6]];
+    return s('svg', { class: 'zg-can-svg', viewBox: '0 0 64 128', 'aria-hidden': 'true', focusable: 'false' }, [
+      s('defs', {}, [
+        gradient(uid + '-metal', false, [['0%', '#2c2c2c'], ['12%', '#7a7a7a'], ['28%', '#c8c8c8'], ['42%', '#efefef'],
+          ['55%', '#d0d0d0'], ['72%', '#9a9a9a'], ['88%', '#5a5a5a'], ['100%', '#1e1e1e']]),
+        gradient(uid + '-band', true, [['0%', b.band[0]], ['50%', b.band[1]], ['100%', b.band[2]]]),
+        gradient(uid + '-liquid', true, [['0%', b.liquid[0]], ['100%', b.liquid[1]]]),
+        s('clipPath', { id: uid + '-liquid-clip' }, [
+          s('rect', { class: 'zg-liquid-rect', x: 12, y: 108, width: 40, height: 0, rx: 4 })
+        ])
+      ]),
+      s('ellipse', { cx: 32, cy: 114, rx: 20, ry: 4.5, fill: '#3a3a3a', opacity: 0.9 }),
+      s('ellipse', { cx: 32, cy: 112.5, rx: 18.5, ry: 3.2, fill: '#555' }),
+      s('rect', { x: 10, y: 16, width: 44, height: 96, rx: 6, ry: 6, fill: `url(#${uid}-metal)`, stroke: '#1a1a1a', 'stroke-width': 0.8 }),
+      s('g', { 'clip-path': `url(#${uid}-liquid-clip)` }, [
+        s('rect', { x: 12, y: 20, width: 40, height: 88, class: 'zg-liquid', fill: `url(#${uid}-liquid)` }),
+        s('g', { class: 'zg-bubbles' }, bubbles.map(([cx, cy, r, dur, delay]) =>
+          s('circle', { class: 'zg-bubble', cx, cy, r, style: { animationDuration: dur + 's', animationDelay: delay + 's' } })))
+      ]),
+      s('rect', { x: 10, y: 48, width: 44, height: 28, fill: `url(#${uid}-band)` }),
+      s('ellipse', { cx: 32, cy: 16, rx: 20, ry: 5, fill: '#c0c0c0' }),
+      s('ellipse', { cx: 32, cy: 15, rx: 14, ry: 3.2, fill: '#e8e8e8' }),
+      s('ellipse', { cx: 32, cy: 14.2, rx: 9, ry: 1.6, fill: 'none', stroke: '#999', 'stroke-width': 0.7 }),
+      s('rect', { x: 30.5, y: 11.5, width: 3, height: 3.5, rx: 0.8, fill: '#aaa', stroke: '#777', 'stroke-width': 0.4 }),
+      s('text', { x: 32, y: 60, 'text-anchor': 'middle', fill: '#fff', 'font-size': 9, 'font-weight': 900,
+        'font-family': 'Arial Black, Helvetica, sans-serif', 'letter-spacing': 1, text: 'ZERO' }),
+      s('text', { x: 32, y: 71, 'text-anchor': 'middle', fill: '#fff', 'font-size': b.subSize, 'font-weight': 700,
+        'font-family': 'Arial Black, Helvetica, sans-serif', 'letter-spacing': 1, text: b.label }),
+      s('g', { class: 'zg-condensation' }, [[14, 30, 1.2], [48, 38, 1.0], [15, 70, 0.9], [49, 80, 1.1]]
+        .map(([cx, cy, r]) => s('circle', { cx, cy, r })))
+    ]);
   }
 
   function canId(provider) {
     return 'zero-grok-can-' + (provider || 'grok');
   }
 
-  function mountCan(opts) {
-    const { provider, settings = {}, onClick, colors } = opts;
-    const id = canId(provider);
+  function levelClass(rem) {
+    return rem == null || !Number.isFinite(rem) ? '' : rem <= 10 ? 'zg-critical' : rem <= 30 ? 'zg-warn' : 'zg-ok';
+  }
 
+  /** text: optional override for the big label (countdown, "?" or a count). */
+  function setLiquidLevel(canEl, remainingPercent, text) {
+    if (!canEl) return;
+    const rect = canEl.querySelector('.zg-liquid-rect');
+    const percentEl = canEl.querySelector('.zg-percent');
+    const liquid = canEl.querySelector('.zg-liquid');
+    const fullH = 88;
+    const rem = remainingPercent;
+    const known = rem != null && Number.isFinite(rem);
+    const hgt = known ? Math.max(0, Math.min(fullH, (rem / 100) * fullH)) : 0;
+    if (rect) {
+      rect.setAttribute('y', String(20 + (fullH - hgt)));
+      rect.setAttribute('height', String(hgt));
+    }
+    const cls = levelClass(rem);
+    if (percentEl) {
+      percentEl.textContent = text != null ? text : known ? `${Math.round(rem)}%` : '--%';
+      percentEl.className = 'zg-percent ' + cls;
+    }
+    if (liquid) {
+      liquid.classList.remove('zg-ok', 'zg-warn', 'zg-critical');
+      if (cls) liquid.classList.add(cls);
+    }
+    canEl.classList.remove('zg-lvl-ok', 'zg-lvl-warn', 'zg-lvl-critical');
+    if (cls) canEl.classList.add(cls.replace('zg-', 'zg-lvl-'));
+  }
+
+  function setSecondary(canEl, text) {
+    const el = canEl?.querySelector('.zg-secondary');
+    if (!el) return;
+    el.textContent = text || '';
+    el.style.display = text ? 'block' : 'none';
+  }
+
+  // ---- position persistence (localStorage is per site origin) ----
+  function lsKey(kind, provider) { return 'zeroGrokCan' + kind + '_' + (provider || 'default'); }
+  function loadSavedPosition(provider) {
+    try { return JSON.parse(localStorage.getItem(lsKey('Pos', provider)) || 'null'); } catch (_) { return null; }
+  }
+  function savePosition(provider, pos) {
+    try {
+      if (!pos) localStorage.removeItem(lsKey('Pos', provider));
+      else localStorage.setItem(lsKey('Pos', provider), JSON.stringify(pos));
+    } catch (_) {}
+  }
+  function isMinimized(provider) {
+    try { return localStorage.getItem(lsKey('Mini', provider)) === '1'; } catch (_) { return false; }
+  }
+  function setMinimized(canEl, provider, mini) {
+    try {
+      if (mini) localStorage.setItem(lsKey('Mini', provider), '1');
+      else localStorage.removeItem(lsKey('Mini', provider));
+    } catch (_) {}
+    if (canEl) canEl.classList.toggle('zg-mini', !!mini);
+  }
+
+  const CORNERS = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
+  function clearPosClasses(canEl) {
+    for (const c of CORNERS) canEl.classList.remove('zg-pos-' + c);
+    canEl.classList.remove('zg-pos-custom');
+  }
+
+  /** Apply saved/default position without clobbering other classes (zg-can-root etc). */
+  function applyPosition(canEl, settings, provider) {
+    if (!canEl) return;
+    canEl.classList.add('zg-can-root', 'zg-can');
+    clearPosClasses(canEl);
+    const saved = loadSavedPosition(provider);
+    canEl.style.left = canEl.style.top = canEl.style.right = canEl.style.bottom = '';
+    if (saved && CORNERS.includes(saved.corner)) {
+      canEl.classList.add('zg-pos-' + saved.corner);
+      return;
+    }
+    if (saved && typeof saved.left === 'number' && typeof saved.top === 'number') {
+      const w = canEl.offsetWidth || 72, hh = canEl.offsetHeight || 150;
+      canEl.style.left = Math.max(0, Math.min(window.innerWidth - w, saved.left)) + 'px';
+      canEl.style.top = Math.max(0, Math.min(window.innerHeight - hh, saved.top)) + 'px';
+      canEl.style.right = 'auto';
+      canEl.style.bottom = 'auto';
+      canEl.classList.add('zg-pos-custom');
+      return;
+    }
+    const pos = CORNERS.includes(settings && settings.canPosition) ? settings.canPosition : 'bottom-right';
+    canEl.classList.add('zg-pos-' + pos);
+  }
+
+  const SNAP_PX = 80;
+  function makeDraggable(canEl, provider) {
+    if (!canEl || canEl.__zgDragBound) return;
+    canEl.__zgDragBound = true;
+    let ox = 0, oy = 0, startX = 0, startY = 0, dragging = false, moved = false;
+
+    canEl.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 || e.target.closest('.zg-mini-btn')) return;
+      dragging = true;
+      moved = false;
+      const rect = canEl.getBoundingClientRect();
+      ox = e.clientX - rect.left;
+      oy = e.clientY - rect.top;
+      startX = e.clientX;
+      startY = e.clientY;
+      try { canEl.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+
+    canEl.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) < 5) return;
+      if (!moved) {
+        moved = true;
+        canEl.classList.add('zg-dragging');
+        clearPosClasses(canEl);
+        canEl.classList.add('zg-pos-custom');
+      }
+      const w = canEl.offsetWidth, hh = canEl.offsetHeight;
+      canEl.style.left = Math.max(0, Math.min(window.innerWidth - w, e.clientX - ox)) + 'px';
+      canEl.style.top = Math.max(0, Math.min(window.innerHeight - hh, e.clientY - oy)) + 'px';
+      canEl.style.right = 'auto';
+      canEl.style.bottom = 'auto';
+    });
+
+    const end = () => {
+      if (!dragging) return;
+      dragging = false;
+      if (!moved) return;
+      const rect = canEl.getBoundingClientRect();
+      const d = {
+        'top-left': Math.hypot(rect.left, rect.top),
+        'top-right': Math.hypot(window.innerWidth - rect.right, rect.top),
+        'bottom-left': Math.hypot(rect.left, window.innerHeight - rect.bottom),
+        'bottom-right': Math.hypot(window.innerWidth - rect.right, window.innerHeight - rect.bottom)
+      };
+      const corner = Object.keys(d).sort((a, b) => d[a] - d[b])[0];
+      if (d[corner] <= SNAP_PX) savePosition(provider, { corner });
+      else savePosition(provider, { left: Math.round(rect.left), top: Math.round(rect.top) });
+      applyPosition(canEl, null, provider);
+      // let the click handler see that this was a drag, then clear the flag
+      setTimeout(() => canEl.classList.remove('zg-dragging'), 0);
+    };
+    canEl.addEventListener('pointerup', end);
+    canEl.addEventListener('pointercancel', end);
+  }
+
+  /**
+   * Create (or reuse) the can for `provider`. Returns the element; caller owns
+   * re-attaching it after SPA body swaps (see provider-core.js).
+   */
+  function mountCan(opts) {
+    const { provider, settings = {}, onClick, colors, label } = opts;
+    const id = canId(provider);
     let canEl = document.getElementById(id);
     if (!canEl) {
-      canEl = document.createElement('div');
-      canEl.id = id;
-      canEl.classList.add('zg-can-root');
-      canEl.dataset.provider = provider || 'grok';
-      canEl.setAttribute('aria-label', 'Zero Grok usage meter');
-      canEl.innerHTML = canHTML(provider);
-      document.body.appendChild(canEl);
-      if (onClick) canEl.addEventListener('click', (e) => {
-        if (canEl.classList.contains('zg-dragging')) return;
-        onClick(e);
+      const miniBtn = h('button', { type: 'button', class: 'zg-mini-btn', title: opts.minimizeLabel || 'Minimize', 'aria-label': opts.minimizeLabel || 'Minimize', text: '–' });
+      canEl = h('div', {
+        id, class: 'zg-can-root zg-can', 'data-provider': provider || 'grok', role: 'button', tabindex: '0',
+        'aria-label': (label || 'Zero Grok') + ' usage meter'
+      }, [
+        h('div', { class: 'zg-can-body' }, [
+          buildCanSvg(provider),
+          h('div', { class: 'zg-percent', text: '--%' }),
+          h('div', { class: 'zg-secondary', style: { display: 'none' } })
+        ]),
+        miniBtn
+      ]);
+      miniBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setMinimized(canEl, provider, true);
       });
+      canEl.addEventListener('click', (e) => {
+        if (canEl.classList.contains('zg-dragging')) return;
+        if (canEl.classList.contains('zg-mini')) {
+          setMinimized(canEl, provider, false);
+          return;
+        }
+        if (onClick) onClick(e);
+      });
+      canEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          if (canEl.classList.contains('zg-mini')) setMinimized(canEl, provider, false);
+          else if (onClick) onClick(e);
+        }
+      });
+      (document.body || document.documentElement).appendChild(canEl);
     }
-
     applyPosition(canEl, settings, provider);
     makeDraggable(canEl, provider);
-    bindKeyboardToggle(canEl, settings);
-
-    if (settings.hideCan) {
-      canEl.style.display = 'none';
-    } else {
-      canEl.style.display = 'flex';
-    }
-
-    if (global.ZeroGrokCanFx) {
+    canEl.classList.toggle('zg-mini', isMinimized(provider));
+    canEl.style.display = settings.hideCan ? 'none' : '';
+    if (global.ZeroGrokCanFx && !settings.hideCan) {
       global.ZeroGrokCanFx.playFirstUse(canEl, provider, settings.soundEnabled !== false, colors);
     }
-
     return canEl;
   }
 
   global.ZeroGrokCanUI = {
-    canHTML,
-    canId,
-    setLiquidLevel,
-    setSecondary,
-    applyPosition,
-    makeDraggable,
-    mountCan,
-    loadSavedPosition,
-    savePosition,
-    BRANDS
+    h, s, BRANDS, buildCanSvg, canId, setLiquidLevel, setSecondary, applyPosition, makeDraggable, mountCan,
+    loadSavedPosition, savePosition, isMinimized, setMinimized, levelClass
   };
 })(typeof window !== 'undefined' ? window : self);

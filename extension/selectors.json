@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "version": 1,
+  "note": "Data only. Zero Grok fetches this file from GitHub (if enabled) so page selectors can be fixed without a new release. It is validated and never executed.",
+  "providers": {
+    "grok": {
+      "limitSurfaces": [
+        "[role=\"alert\"]",
+        "[role=\"status\"]",
+        "[class*=\"toast\"]",
+        "[class*=\"banner\"]"
+      ],
+      "limitPatterns": [
+        "you(?:'ve| have)?\\s+(?:reached|hit)\\s+(?:your\\s+|the\\s+)?(?:(?:daily|weekly|message|usage|rate|free|plan)\\s+){0,3}limit",
+        "rate\\s+limit\\s+(?:reached|exceeded)"
+      ]
+    },
+    "claude": {
+      "limitSurfaces": [
+        "[role=\"alert\"]",
+        "[role=\"status\"]",
+        "[class*=\"toast\"]",
+        "[class*=\"banner\"]",
+        "[class*=\"notice\"]",
+        "[data-testid*=\"limit\"]",
+        "[data-testid*=\"usage\"]"
+      ],
+      "limitPatterns": [
+        "you(?:'ve| have)?\\s+(?:reached|hit)\\s+(?:your\\s+|the\\s+)?(?:(?:daily|weekly|message|usage|rate|free|plan)\\s+){0,3}limit",
+        "usage\\s+limit\\s+(?:reached|exceeded)",
+        "out of free messages"
+      ]
+    },
+    "chatgpt": {
+      "limitSurfaces": [
+        "[role=\"alert\"]",
+        "[role=\"status\"]",
+        "[data-testid*=\"limit\"]",
+        "[data-testid*=\"usage\"]",
+        "[class*=\"toast\"]",
+        "[class*=\"banner\"]"
+      ],
+      "percentSurfaces": [
+        "[data-testid*=\"usage\"]",
+        "[data-testid*=\"limit\"]",
+        "[class*=\"usage\"]",
+        "[role=\"progressbar\"]"
+      ],
+      "limitPatterns": [
+        "you(?:'ve| have)?\\s+(?:reached|hit)\\s+(?:your\\s+|the\\s+)?(?:(?:daily|weekly|message|usage|rate|free|plan)\\s+){0,3}limit",
+        "you've hit the free plan limit"
+      ],
+      "endpoints": [
+        "/backend-api/conversation/init",
+        "/public-api/conversation_limit"
+      ]
+    },
+    "gemini": {
+      "usageBlocks": {
+        "current": [
+          "[data-test-id=\"gxu-currently\"]",
+          ".gxu-currently"
+        ],
+        "weekly": [
+          "[data-test-id=\"gxu-weekly\"]",
+          ".gxu-weekly"
+        ]
+      },
+      "limitSurfaces": [
+        "[role=\"alert\"]",
+        "[role=\"status\"]",
+        "[class*=\"toast\"]",
+        "[class*=\"banner\"]",
+        "[class*=\"limit\"]",
+        "[data-test-id*=\"limit\"]"
+      ],
+      "limitPatterns": [
+        "you(?:'ve| have)?\\s+(?:reached|hit)\\s+(?:your\\s+|the\\s+)?(?:(?:daily|weekly|message|usage|rate|free|plan)\\s+){0,3}limit",
+        "usage\\s+limit\\s+(?:reached|exceeded)"
+      ]
+    },
+    "perplexity": {
+      "limitSurfaces": [
+        "[role=\"alert\"]",
+        "[role=\"status\"]",
+        "[class*=\"toast\"]",
+        "[class*=\"banner\"]",
+        "[class*=\"upgrade\"]"
+      ],
+      "countPatterns": [
+        "(\\d+)\\s+(?:pro\\s+)?(?:searches|queries)\\s+(?:left|remaining)",
+        "(\\d+)\\s+(?:enhanced\\s+)?queries\\s+left"
+      ],
+      "limitPatterns": [
+        "(?:out of|no more)\\s+(?:pro\\s+)?(?:searches|queries)",
+        "(?:daily|pro search)\\s+limit\\s+(?:reached|hit)"
+      ],
+      "endpoints": []
+    },
+    "deepseek": {
+      "limitSurfaces": [
+        "[role=\"alert\"]",
+        "[role=\"status\"]",
+        "[class*=\"toast\"]",
+        "[class*=\"notice\"]"
+      ],
+      "limitPatterns": [
+        "you(?:'ve| have)?\\s+(?:reached|hit)\\s+(?:your\\s+|the\\s+)?(?:(?:daily|weekly|message|usage|rate|free|plan)\\s+){0,3}limit"
+      ]
+    },
+    "mistral": {
+      "limitSurfaces": [
+        "[role=\"alert\"]",
+        "[role=\"status\"]",
+        "[class*=\"toast\"]",
+        "[class*=\"banner\"]"
+      ],
+      "countPatterns": [
+        "(\\d+)\\s+messages?\\s+(?:left|remaining)"
+      ],
+      "limitPatterns": [
+        "you(?:'ve| have)?\\s+(?:reached|hit)\\s+(?:your\\s+|the\\s+)?(?:(?:daily|weekly|message|usage|rate|free|plan)\\s+){0,3}limit",
+        "rate\\s+limit\\s+(?:reached|exceeded)"
+      ]
+    },
+    "copilot": {
+      "limitSurfaces": [
+        "[role=\"alert\"]",
+        "[role=\"status\"]",
+        "[class*=\"toast\"]",
+        "[class*=\"banner\"]"
+      ],
+      "limitPatterns": [
+        "you(?:'ve| have)?\\s+(?:reached|hit)\\s+(?:your\\s+|the\\s+)?(?:(?:daily|weekly|message|usage|rate|free|plan)\\s+){0,3}limit",
+        "limit\\s+(?:reached|exceeded)"
+      ]
+    },
+    "metaai": {
+      "limitSurfaces": [
+        "[role=\"alert\"]",
+        "[role=\"status\"]",
+        "[class*=\"toast\"]"
+      ],
+      "limitPatterns": [
+        "you(?:'ve| have)?\\s+(?:reached|hit)\\s+(?:your\\s+|the\\s+)?(?:(?:daily|weekly|message|usage|rate|free|plan)\\s+){0,3}limit"
+      ]
+    }
+  }
+}

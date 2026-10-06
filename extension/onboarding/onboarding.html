@@ -26,92 +26,66 @@
           <text x="32" y="71" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">GROK</text>
         </svg>
       </div>
-      <h1>Welcome to Zero Grok</h1>
-      <p class="tagline">Watch your AI usage drain like a Diet Coke can.<br/>Never get rate-limited by surprise.</p>
+      <h1 data-i18n="onbTitle">Welcome to Zero Grok</h1>
+      <p class="tagline" data-i18n="onbTagline">Watch your AI usage drain like a soda can. Never get rate-limited by surprise.</p>
     </header>
 
     <section class="card">
-      <h2>What it does</h2>
+      <h2 data-i18n="onbWhatTitle">What it does</h2>
       <ul class="features">
-        <li><strong>Live remaining %</strong> on a floating soda can</li>
-        <li><strong>Grok</strong> — free rolling limits + SuperGrok weekly pool</li>
-        <li><strong>Claude</strong> — session & weekly usage (when available)</li>
-        <li><strong>ChatGPT</strong> — Plus/Team live % · Free best-effort</li>
-        <li><strong>Gemini</strong> — Free / Plus / Pro / Ultra from usage page</li>
-        <li>Click the can for details · badge shows lowest remaining %</li>
-        <li>Everything stays in your browser — no servers, no tracking</li>
+        <li data-i18n="onbF1">Live remaining % on a floating soda can, with a reset countdown</li>
+        <li data-i18n="onbF2">Grok, Claude, ChatGPT and Gemini built in — Perplexity, DeepSeek, Le Chat, Copilot and Meta AI optional</li>
+        <li data-i18n="onbF3">Every number is labelled: site usage API, read from page, or estimate</li>
+        <li data-i18n="onbF4">Alerts at your thresholds, quiet hours, and a hint when another AI has room</li>
+        <li data-i18n="onbF5">Everything stays in your browser — no servers, no analytics</li>
       </ul>
     </section>
 
     <section class="card">
-      <h2>How it works</h2>
-      <ol class="steps">
-        <li>Open <strong>grok.com</strong>, <strong>claude.ai</strong>, <strong>chatgpt.com</strong>, or <strong>gemini.google.com</strong> while signed in.</li>
-        <li>The can appears automatically (bottom-right by default).</li>
-        <li>For free Grok: send one short message if numbers don’t show yet.</li>
-        <li>Claude, ChatGPT & Gemini use the same session cookies the site already has.</li>
-        <li>Click the can anytime for remaining count, reset hint, and refresh.</li>
-      </ol>
+      <h2 data-i18n="onbSetupTitle">1 · Pick your AIs and plans</h2>
+      <p class="fine" data-i18n="onbSetupHint">Your plan sets sensible defaults (for example, rough caps used only when a site shows no numbers). Optional sites will ask for access.</p>
+      <div id="providers" class="prov-grid"></div>
     </section>
 
     <section class="card">
-      <h2>Customize</h2>
+      <h2 data-i18n="onbLookTitle">2 · Look &amp; feel</h2>
       <div class="form-grid">
         <label>
-          Can position
+          <span data-i18n="onbPosition">Can position</span>
           <select id="position">
-            <option value="bottom-right">Bottom right</option>
-            <option value="bottom-left">Bottom left</option>
-            <option value="top-right">Top right</option>
-            <option value="top-left">Top left</option>
+            <option value="bottom-right" data-i18n="posBR">Bottom right</option>
+            <option value="bottom-left" data-i18n="posBL">Bottom left</option>
+            <option value="top-right" data-i18n="posTR">Top right</option>
+            <option value="top-left" data-i18n="posTL">Top left</option>
           </select>
         </label>
         <label>
-          Theme
+          <span data-i18n="optTheme">Theme</span>
           <select id="theme">
-            <option value="auto">Auto (system)</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
+            <option value="auto" data-i18n="themeAuto">Auto (system)</option>
+            <option value="light" data-i18n="themeLight">Light</option>
+            <option value="dark" data-i18n="themeDark">Dark</option>
           </select>
         </label>
-        <label class="check">
-          <input type="checkbox" id="badge" checked />
-          Show % on toolbar badge
-        </label>
-        <label class="check">
-          <input type="checkbox" id="sound" checked />
-          Can-pop on first use &amp; after refill (100% → available)
-        </label>
-        <label class="check">
-          <input type="checkbox" id="enableGrok" checked />
-          Enable Grok
-        </label>
-        <label class="check">
-          <input type="checkbox" id="enableClaude" checked />
-          Enable Claude
-        </label>
-        <label class="check">
-          <input type="checkbox" id="enableChatgpt" checked />
-          Enable ChatGPT
-        </label>
-        <label class="check">
-          <input type="checkbox" id="enableGemini" checked />
-          Enable Gemini
-        </label>
+        <label class="check"><input type="checkbox" id="sound" checked /> <span data-i18n="optSound">Can-pop sound on first use and after a refill</span></label>
+        <label class="check"><input type="checkbox" id="reduceMotion" /> <span data-i18n="onbReduceMotion">Reduce motion</span></label>
+        <label class="check"><input type="checkbox" id="autoCheckUpdates" /> <span data-i18n="onbUpdates">I installed the ZIP — tell me when a new version is on GitHub</span></label>
       </div>
     </section>
 
     <section class="card tip">
-      <h2>Quick tip</h2>
-      <p>Free Grok uses the rate-limits API (no Settings page). Claude Pro/Max and Gemini usage pages are the most accurate. ChatGPT Free is best-effort until a limit banner appears. The can-pop plays on first show and again when a window refills after 100% used.</p>
+      <h2 data-i18n="onbTipTitle">Quick tips</h2>
+      <p data-i18n="onbTip">Open a supported site while signed in and the can appears. Click it for details, drag it to any corner, or press Alt+Shift+Z. For Gemini, open gemini.google.com/usage once.</p>
     </section>
 
     <footer>
-      <button id="save" class="primary">Save & get started</button>
-      <button id="options" class="ghost">Open full options later</button>
-      <p class="fine">You can change these anytime from the extension Options page.</p>
+      <button id="save" class="primary" data-i18n="onbSave">Save &amp; get started</button>
+      <button id="options" class="ghost" data-i18n="onbMore">More options</button>
+      <p class="fine" id="status" role="status"></p>
     </footer>
   </div>
+  <script src="../utils/shared.js"></script>
+  <script src="../utils/page.js"></script>
   <script src="onboarding.js" type="module"></script>
 </body>
 </html>

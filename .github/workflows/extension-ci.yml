@@ -1,0 +1,61 @@
+name: Extension CI
+
+on:
+  pull_request:
+    paths:
+      - 'extension/**'
+      - 'tests/**'
+      - 'tools/**'
+      - '.github/workflows/extension-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'extension/**'
+      - 'tests/**'
+      - 'tools/**'
+      - '.github/workflows/extension-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Install test tooling
+        run: npm ci
+
+      - name: web-ext lint (fails on errors)
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests (extension loaded in Chromium)
+        run: npm run test:e2e
+        env:
+          ARTIFACTS: ${{ github.workspace }}/tests/artifacts
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts
+          path: tests/artifacts
+          if-no-files-found: ignore

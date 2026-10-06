@@ -2,93 +2,104 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Zero Grok Options</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 520px; margin: 40px auto; padding: 0 20px; color: #222; }
-    h1 { font-size: 22px; margin-bottom: 4px; }
-    h2 { font-size: 15px; margin: 28px 0 10px; color: #444; }
-    .desc { opacity: 0.7; margin-bottom: 20px; font-size: 13px; }
-    label { display: block; margin: 14px 0 6px; font-weight: 600; font-size: 13px; }
-    select, input[type="number"], input[type="text"] { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
-    .row { display: flex; gap: 10px; align-items: center; margin: 10px 0; }
-    .row label { margin: 0; font-weight: 500; }
-    button { margin-top: 8px; padding: 10px 18px; background: #c41e3a; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
-    button.secondary { background: #e9ecef; color: #333; margin-right: 8px; }
-    .saved { color: #27ae60; margin-left: 12px; opacity: 0; transition: opacity 0.3s; }
-    .link { display: inline-block; margin-top: 12px; font-size: 13px; color: #c41e3a; }
-    .sites { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-    .sites a {
-      display: inline-block; padding: 8px 12px; border-radius: 8px; background: #f1f3f5;
-      color: #222; text-decoration: none; font-size: 12px; font-weight: 600;
-    }
-    .sites a:hover { background: #e9ecef; }
-    .hint { font-size: 11px; opacity: 0.65; margin-top: 4px; }
-  </style>
+  <link rel="stylesheet" href="../utils/theme.css" />
+  <link rel="stylesheet" href="options.css" />
 </head>
 <body>
-  <h1>Zero Grok Options</h1>
-  <p class="desc">Everything stays local. No data leaves your browser. Alt+U toggles the can.</p>
+  <main class="wrap">
+    <h1 data-i18n="optionsTitle">Zero Grok Options</h1>
+    <p class="desc" data-i18n="optionsDesc">Everything stays in your browser. Settings sync through your browser profile if sync is on.</p>
 
-  <h2>Appearance</h2>
-  <label for="position">Default can position (when not dragged)</label>
-  <select id="position">
-    <option value="bottom-right">Bottom right</option>
-    <option value="bottom-left">Bottom left</option>
-    <option value="top-right">Top right</option>
-    <option value="top-left">Top left</option>
-  </select>
-  <p class="hint">Drag the can anywhere — position is saved per site. Reset by clearing site data or re-saving position here after removing local override.</p>
+    <section>
+      <h2 data-i18n="secProviders">Providers</h2>
+      <p class="hint" data-i18n="providersHint">Built-in sites are always allowed. Extra sites ask for permission only when you turn them on.</p>
+      <div id="provider-list" class="provider-list"></div>
+      <div class="row"><input type="checkbox" id="estimateMessages" /><label for="estimateMessages" data-i18n="optEstimate">Local message estimate for Grok / Claude / ChatGPT / Gemini when no live number exists (labelled, not official)</label></div>
+    </section>
 
-  <label for="theme">Theme</label>
-  <select id="theme">
-    <option value="auto">Auto (system)</option>
-    <option value="light">Light</option>
-    <option value="dark">Dark</option>
-  </select>
+    <section>
+      <h2 data-i18n="secAppearance">Appearance</h2>
+      <label for="position" data-i18n="optPosition">Default can position (when not dragged)</label>
+      <select id="position">
+        <option value="bottom-right" data-i18n="posBR">Bottom right</option>
+        <option value="bottom-left" data-i18n="posBL">Bottom left</option>
+        <option value="top-right" data-i18n="posTR">Top right</option>
+        <option value="top-left" data-i18n="posTL">Top left</option>
+      </select>
+      <p class="hint" data-i18n="positionHint">Drag the can anywhere — drop it near a corner to snap. Hover it and press – to shrink it to a dot.</p>
+      <label for="theme" data-i18n="optTheme">Theme</label>
+      <select id="theme">
+        <option value="auto" data-i18n="themeAuto">Auto (system)</option>
+        <option value="light" data-i18n="themeLight">Light</option>
+        <option value="dark" data-i18n="themeDark">Dark</option>
+      </select>
+      <div class="row"><input type="checkbox" id="reduceMotion" /><label for="reduceMotion" data-i18n="optReduceMotion">Reduce motion (no bubbles or pop animations)</label></div>
+      <div class="row"><input type="checkbox" id="hideCan" /><label for="hideCan" data-i18n="optHideCan">Hide the floating can everywhere</label></div>
+      <div class="row"><input type="checkbox" id="sound" /><label for="sound" data-i18n="optSound">Can-pop sound on first use and after a refill</label></div>
+      <h3 data-i18n="hiddenSitesTitle">Hidden on these sites</h3>
+      <ul id="hidden-sites" class="chips"></ul>
+      <p class="hint" id="hidden-empty" data-i18n="hiddenSitesEmpty">None. Use “Hide on this site” in the can’s panel.</p>
+    </section>
 
-  <h2>Alerts &amp; badge</h2>
-  <label for="poll">Poll interval (minutes)</label>
-  <input type="number" id="poll" min="1" max="60" value="5" />
+    <section>
+      <h2 data-i18n="secAlerts">Alerts &amp; badge</h2>
+      <label for="thresholds" data-i18n="optThresholds">Warn me at these % used (comma-separated)</label>
+      <input type="text" id="thresholds" inputmode="numeric" placeholder="50, 80, 95" />
+      <p class="hint" id="thresholds-error" role="alert"></p>
+      <div class="row"><input type="checkbox" id="notifyOnReset" /><label for="notifyOnReset" data-i18n="optNotifyReset">Notify me when a limit resets</label></div>
+      <div class="row"><input type="checkbox" id="suggestSwitch" /><label for="suggestSwitch" data-i18n="optSuggest">Suggest another AI with room left when one runs low</label></div>
+      <div class="row"><input type="checkbox" id="quietHoursEnabled" /><label for="quietHoursEnabled" data-i18n="optQuiet">Quiet hours (no notifications)</label></div>
+      <div class="inline">
+        <label for="quietStart" data-i18n="from">From</label><input type="time" id="quietStart" />
+        <label for="quietEnd" data-i18n="to">to</label><input type="time" id="quietEnd" />
+      </div>
+      <label for="badgeMode" data-i18n="optBadge">Toolbar badge shows</label>
+      <select id="badgeMode"></select>
+      <label for="poll" data-i18n="optPoll">Background refresh every (minutes)</label>
+      <input type="number" id="poll" min="1" max="60" />
+    </section>
 
-  <label for="thresholds">Alert thresholds (% used, comma-separated)</label>
-  <input type="text" id="thresholds" value="70, 90, 100" />
+    <section>
+      <h2 data-i18n="secData">Your data</h2>
+      <p class="hint" data-i18n="dataHint">Usage history (up to 31 days) is stored only on this device.</p>
+      <div class="btns">
+        <button type="button" class="secondary" id="exportJson" data-i18n="exportJson">Export JSON</button>
+        <button type="button" class="secondary" id="exportCsv" data-i18n="exportCsv">Export CSV</button>
+        <button type="button" class="secondary" id="shareCard" data-i18n="shareCard">Share card</button>
+        <button type="button" class="secondary danger" id="clearHistory" data-i18n="clearHistory">Clear history</button>
+      </div>
+    </section>
 
-  <label for="badgeMode">Toolbar badge shows</label>
-  <select id="badgeMode">
-    <option value="lowest">Lowest remaining (all AIs)</option>
-    <option value="last">Last updated AI</option>
-  </select>
+    <section id="updates">
+      <h2 data-i18n="secUpdates">Updates</h2>
+      <div class="row"><input type="checkbox" id="autoCheckUpdates" /><label for="autoCheckUpdates" data-i18n="optAutoUpdate">Check GitHub for new versions every 6 hours (for ZIP / “Load unpacked” installs — store installs update automatically)</label></div>
+      <div class="btns"><button type="button" class="secondary" id="checkNow" data-i18n="checkNow">Check now</button></div>
+      <p class="hint" id="update-status"></p>
+      <div class="row"><input type="checkbox" id="remoteSelectors" /><label for="remoteSelectors" data-i18n="optRemoteSelectors">Download selector fixes (a small data-only JSON file from GitHub, never code)</label></div>
+    </section>
 
-  <div class="row"><input type="checkbox" id="badge" checked /><label for="badge">Show % on toolbar badge</label></div>
-  <div class="row"><input type="checkbox" id="sound" checked /><label for="sound">Can-pop on first use &amp; after refill</label></div>
-  <div class="row"><input type="checkbox" id="hideCan" /><label for="hideCan">Hide floating can</label></div>
-  <div class="row"><input type="checkbox" id="estimateMessages" /><label for="estimateMessages">Local message estimate when no live % (labeled, not official)</label></div>
+    <section>
+      <h2 data-i18n="secShortcuts">Keyboard</h2>
+      <p class="hint" data-i18n="shortcutsHint">Alt+Shift+Z opens the usage panel. Alt+U shows or hides the can.</p>
+      <div class="btns"><button type="button" class="secondary" id="shortcuts" data-i18n="changeShortcuts">Change shortcuts</button></div>
+    </section>
 
-  <h2>Providers</h2>
-  <div class="row"><input type="checkbox" id="enableGrok" checked /><label for="enableGrok">Grok</label></div>
-  <div class="row"><input type="checkbox" id="enableClaude" checked /><label for="enableClaude">Claude</label></div>
-  <div class="row"><input type="checkbox" id="enableChatgpt" checked /><label for="enableChatgpt">ChatGPT</label></div>
-  <div class="row"><input type="checkbox" id="enableGemini" checked /><label for="enableGemini">Gemini</label></div>
+    <div class="savebar">
+      <button id="save" data-i18n="save">Save settings</button>
+      <span class="saved" id="saved" role="status"></span>
+    </div>
 
-  <h2>Open AI sites</h2>
-  <div class="sites">
-    <a href="https://grok.com" target="_blank" rel="noopener">Grok</a>
-    <a href="https://claude.ai" target="_blank" rel="noopener">Claude</a>
-    <a href="https://chatgpt.com" target="_blank" rel="noopener">ChatGPT</a>
-    <a href="https://gemini.google.com" target="_blank" rel="noopener">Gemini</a>
-  </div>
+    <p class="links">
+      <a href="#" id="reopen-onboarding" data-i18n="reopenSetup">Run first-time setup again</a> ·
+      <a href="https://github.com/guguluP/zero-grok-site/blob/main/extension/PRIVACY.md" target="_blank" rel="noopener" data-i18n="privacyLink">Privacy</a>
+    </p>
+  </main>
 
-  <h2>Data</h2>
-  <button type="button" class="secondary" id="export">Export usage snapshot (JSON)</button>
-  <button type="button" class="secondary" id="clearHistory">Clear usage history</button>
-
-  <div style="margin-top:20px">
-    <button id="save">Save settings</button>
-    <span class="saved" id="saved">Saved ✓</span>
-  </div>
-
-  <p><a class="link" href="#" id="reopen-onboarding">Re-open introduction page</a></p>
-
+  <script src="../utils/shared.js"></script>
+  <script src="../utils/page.js"></script>
+  <script src="../utils/share-card.js"></script>
   <script src="options.js" type="module"></script>
 </body>
 </html>
