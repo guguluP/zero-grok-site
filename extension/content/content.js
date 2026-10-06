@@ -1,196 +1,80 @@
 /**
- * Zero Grok – Content Script
- * Free tier priority + Diet Coke style can animations + first-use pop sound
+ * Zero Grok – Grok (grok.com / grok.x.ai / x.com/i/grok)
+ *
+ * 1. Free & paid rate limits: POST /rest/rate-limits per model (official numbers,
+ *    gives a per-model breakdown).
+ * 2. Paid weekly pool: GetGrokCreditsConfig. We first ask for JSON (explicit
+ *    fields); only if that fails do we decode the gRPC-web protobuf and pick a
+ *    float field – that path is labelled "Estimate" in the UI.
+ * 3. Live: the page-world hook forwards the page's own rate-limit responses.
  */
-
-(async function () {
+(function () {
   'use strict';
+  const S = window.ZeroGrokShared;
+  const P = window.ZeroGrokProvider;
+  if (!S || !P) return;
 
-  if (window.__ZERO_GROK_INJECTED__) return;
-  window.__ZERO_GROK_INJECTED__ = true;
-
-  const FREE_PROBES = [
+  const PROBES = [
     { modelName: 'grok-3', requestKind: 'DEFAULT', label: 'Fast' },
-    { modelName: 'fast', requestKind: null, label: 'Fast' },
     { modelName: 'grok-3', requestKind: 'REASONING', label: 'Think' },
-    { modelName: 'auto', requestKind: null, label: 'Auto' }
+    { modelName: 'grok-3', requestKind: 'DEEPSEARCH', label: 'DeepSearch' },
+    { modelName: 'grok-4', requestKind: 'DEFAULT', label: 'Grok 4' }
   ];
+  const BILLING_URL = 'https://grok.com/grok_api_v2.GrokBuildBilling/GetGrokCreditsConfig';
 
-  let currentUsage = null;
-  let settings = { canPosition: 'bottom-right', theme: 'auto', hideCan: false, enableGrok: true, soundEnabled: true };
-  let canEl = null;
-  let panelEl = null;
-  let isExpanded = false;
-
-  // ---------- Settings ----------
-  function loadSettings() {
-    try {
-      chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (res) => {
-        if (chrome.runtime.lastError) return;
-        if (res) settings = { ...settings, ...res };
-        applyTheme();
-        if (settings.enableGrok === false) return;
-        settings.hideCan ? hideCan() : showCan();
-      });
-    } catch (_) {}
-  }
-
-  function applyTheme() {
-    const dark = settings.theme === 'dark' ||
-      (settings.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    document.documentElement.classList.toggle('zg-dark', dark);
-  }
-
-  // ---------- Can UI (shared via can-ui.js) ----------
-  function createCan() {
-    if (canEl) return canEl;
-    if (window.ZeroGrokCanUI) {
-      canEl = window.ZeroGrokCanUI.mountCan({
-        provider: 'grok',
-        settings,
-        onClick: togglePanel,
-        colors: { a: '#c41e3a', b: '#fff' }
-      });
-      return canEl;
+  /** Normalise one /rest/rate-limits response. */
+  function normalizeRateLimit(json, label) {
+    if (!json || typeof json !== 'object') return null;
+    let remaining = json.remainingQueries ?? json.remaining;
+    let total = json.totalQueries ?? json.total;
+    if (remaining == null && json.lowEffortRateLimits) {
+      remaining = json.lowEffortRateLimits.remainingQueries;
+      total = json.lowEffortRateLimits.totalQueries ?? total;
     }
-    // Minimal fallback if shared UI scripts failed to load
-    canEl = document.createElement('div');
-    canEl.id = 'zero-grok-can-grok';
-    canEl.classList.add('zg-can-root');
-    canEl.dataset.provider = 'grok';
-    canEl.setAttribute('aria-label', 'Zero Grok usage meter');
-    canEl.innerHTML = '<div class="zg-can-body"><div class="zg-percent" id="zg-percent">--%</div></div>';
-    canEl.addEventListener('click', togglePanel);
-    document.body.appendChild(canEl);
-    canEl.className = 'zg-can-root zg-can zg-pos-' + (settings.canPosition || 'bottom-right');
-    return canEl;
-  }
-
-  function updateCanVisual(data) {
-    if (!canEl) return;
-    const rem = data?.remainingPercent;
-    if (window.ZeroGrokCanUI) {
-      window.ZeroGrokCanUI.setLiquidLevel(canEl, rem);
-      if (data && Number.isFinite(data.weeklyRemaining)) {
-        window.ZeroGrokCanUI.setSecondary(canEl, 'W ' + Math.round(data.weeklyRemaining) + '%');
-      } else {
-        window.ZeroGrokCanUI.setSecondary(canEl, '');
-      }
-      return;
-    }
-    const percentEl = canEl.querySelector('#zg-percent');
-    if (percentEl) {
-      percentEl.textContent = rem == null ? '--%' : `${Math.round(rem)}%`;
-    }
-  }
-
-  function showCan() { createCan(); if (canEl) canEl.style.display = 'flex'; }
-  function hideCan() { if (canEl) canEl.style.display = 'none'; }
-
-  // ---------- Panel ----------
-  function createPanel() {
-    if (panelEl) return panelEl;
-    panelEl = document.createElement('div');
-    panelEl.id = 'zero-grok-panel';
-    panelEl.innerHTML = `
-      <div class="zg-panel-header">
-        <span>Zero Grok</span>
-        <button class="zg-close">×</button>
-      </div>
-      <div class="zg-panel-body">
-        <div class="zg-big-percent" id="zg-big-percent">--%</div>
-        <div class="zg-label" id="zg-label">remaining</div>
-        <div class="zg-bar-wrap"><div class="zg-bar" id="zg-bar"></div></div>
-        <div class="zg-reset" id="zg-reset"></div>
-        <div class="zg-products" id="zg-products"></div>
-        <div class="zg-footer">
-          <button id="zg-refresh">Refresh</button>
-        </div>
-      </div>`;
-    panelEl.querySelector('.zg-close').onclick = () => {
-      isExpanded = false;
-      panelEl.classList.remove('zg-open');
-    };
-    panelEl.querySelector('#zg-refresh').onclick = () => scrape();
-    document.body.appendChild(panelEl);
-    return panelEl;
-  }
-
-  function togglePanel() {
-    createPanel();
-    isExpanded = !isExpanded;
-    panelEl.classList.toggle('zg-open', isExpanded);
-    if (isExpanded) updatePanel(currentUsage);
-  }
-
-  function updatePanel(data) {
-    if (!panelEl) return;
-    const rem = data?.remainingPercent;
-    const big = panelEl.querySelector('#zg-big-percent');
-    const bar = panelEl.querySelector('#zg-bar');
-    const reset = panelEl.querySelector('#zg-reset');
-    const label = panelEl.querySelector('#zg-label');
-    const products = panelEl.querySelector('#zg-products');
-    const isHeuristic = data?.source === 'grpc-heuristic' || data?.source === 'dom-heuristic';
-    if (big) {
-      if (rem == null) big.textContent = '--%';
-      else big.textContent = (isHeuristic ? '~' : '') + Math.round(rem) + '%';
-    }
-    if (label) label.textContent = data?.windowHint || 'remaining';
-    if (bar) {
-      bar.style.width = rem == null ? '0%' : `${rem}%`;
-      bar.className = 'zg-bar ' + (rem == null ? '' : rem <= 10 ? 'zg-critical' : rem <= 30 ? 'zg-warn' : 'zg-ok');
-    }
-    if (reset) {
-      const src = data?.source === 'grpc-heuristic' ? 'estimated' : data?.source;
-      reset.textContent = [data?.resetHint, src].filter(Boolean).join(' · ');
-    }
-    if (products) {
-      products.innerHTML = data?.isFree
-        ? '<div class="zg-hint">Free tier</div>'
-        : isHeuristic
-          ? '<div class="zg-hint">Estimated from billing response · not authoritative</div>'
-          : '<div class="zg-hint">Open Settings → Usage for breakdown</div>';
-    }
-  }
-
-  // ---------- Free rate-limits (primary) ----------
-  function normalizeRateLimitPayload(data, label) {
-    if (!data || typeof data !== 'object') return null;
-    let remaining = data.remainingQueries ?? data.remaining;
-    let total = data.totalQueries ?? data.total;
-    if (remaining == null && data.lowEffortRateLimits) {
-      remaining = data.lowEffortRateLimits.remainingQueries;
-      total = data.lowEffortRateLimits.totalQueries ?? total;
-    }
-    if (remaining == null && data.highEffortRateLimits) {
-      remaining = data.highEffortRateLimits.remainingQueries;
-      total = data.highEffortRateLimits.totalQueries ?? total;
+    if (remaining == null && json.highEffortRateLimits) {
+      remaining = json.highEffortRateLimits.remainingQueries;
+      total = json.highEffortRateLimits.totalQueries ?? total;
     }
     remaining = Number(remaining);
     total = Number(total);
     if (!Number.isFinite(remaining) || !Number.isFinite(total) || total <= 0) return null;
-    const remainingPercent = Math.max(0, Math.min(100, Math.round((remaining / total) * 100)));
-    let windowHint = 'Free tier · rolling window';
-    if (data.windowSizeSeconds) {
-      const h = Math.round(data.windowSizeSeconds / 3600);
-      if (h > 0) windowHint = `Free · ${h}h window`;
-    }
+    const remainingPercent = S.clampPct((remaining / total) * 100);
+    const wait = Number(json.waitTimeSeconds);
+    const windowH = json.windowSizeSeconds ? Math.round(json.windowSizeSeconds / 3600) : null;
     return {
-      provider: 'grok',
-      isFree: true,
+      label: label || 'Grok',
       remaining,
       total,
       remainingPercent,
-      usedPercent: 100 - remainingPercent,
-      windowHint,
-      resetHint: label || '',
+      resetAt: Number.isFinite(wait) && wait > 0 ? Date.now() + wait * 1000 : null,
+      windowHint: windowH ? S.t('grokWindow', [String(windowH)], '$1h rolling window') : S.t('grokRolling', null, 'Rolling window')
+    };
+  }
+
+  function combine(models) {
+    const ok = models.filter(Boolean);
+    if (!ok.length) return null;
+    // Headline = the most constrained model, de-duplicated by label.
+    const seen = new Set();
+    const uniq = ok.filter((m) => (seen.has(m.label) ? false : seen.add(m.label)));
+    const top = uniq.slice().sort((a, b) => a.remainingPercent - b.remainingPercent)[0];
+    return {
+      provider: 'grok',
+      remaining: top.remaining,
+      total: top.total,
+      remainingPercent: top.remainingPercent,
+      usedPercent: 100 - top.remainingPercent,
+      windowHint: top.label + ' · ' + top.windowHint,
+      resetAt: top.resetAt,
+      model: top.label,
+      breakdown: uniq.length > 1 ? uniq.map((m) => ({ label: m.label, remainingPercent: m.remainingPercent, remaining: m.remaining, resetAt: m.resetAt })) : undefined,
       source: 'rate-limits'
     };
   }
 
-  async function fetchFreeRateLimits() {
-    for (const probe of FREE_PROBES) {
+  async function fetchRateLimits() {
+    let auth = false;
+    const results = await Promise.all(PROBES.map(async (probe) => {
       try {
         const body = { modelName: probe.modelName };
         if (probe.requestKind) body.requestKind = probe.requestKind;
@@ -200,180 +84,98 @@
           headers: { 'content-type': 'application/json', accept: 'application/json' },
           body: JSON.stringify(body)
         });
-        if (!res.ok) continue;
-        const json = await res.json();
-        const normalized = normalizeRateLimitPayload(json, probe.label);
-        if (normalized) return normalized;
-      } catch (_) {}
-    }
-    return null;
+        if (res.status === 401 || res.status === 403) { auth = true; return null; }
+        if (!res.ok) return null;
+        return normalizeRateLimit(await res.json(), probe.label);
+      } catch (_) {
+        return null;
+      }
+    }));
+    for (const m of results) if (m) lastModels.set(m.label, m);
+    return { data: combine(results), auth };
   }
 
-  // Last known paid weekly % from the byte-heuristic path (plausibility guard).
-  let lastPaidWeeklyPct = null;
-  let lastPaidWeeklyAt = 0;
+  const lastModels = new Map();
 
+  let lastPaid = null;
+
+  /** Paid weekly usage: explicit JSON first, protobuf float decode as labelled fallback. */
   async function fetchPaidWeekly() {
     try {
-      const res = await fetch('https://grok.com/grok_api_v2.GrokBuildBilling/GetGrokCreditsConfig', {
+      const res = await fetch(BILLING_URL, {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'content-type': 'application/grpc-web+proto',
-          'x-grpc-web': '1',
-          accept: 'application/grpc-web+proto'
-        },
+        headers: { 'content-type': 'application/json', accept: 'application/json', 'connect-protocol-version': '1' },
+        body: '{}'
+      });
+      if (res.ok && (res.headers.get('content-type') || '').includes('json')) {
+        const fields = S.pickUsageFields(await res.json());
+        if (fields) {
+          return {
+            provider: 'grok', isFree: false,
+            remainingPercent: fields.remainingPercent, usedPercent: fields.usedPercent,
+            weeklyRemaining: fields.remainingPercent, resetAt: fields.resetAt,
+            windowHint: S.t('grokWeekly', null, 'Weekly pool'), source: 'grpc-json'
+          };
+        }
+      }
+    } catch (_) {}
+    try {
+      const res = await fetch(BILLING_URL, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'content-type': 'application/grpc-web+proto', 'x-grpc-web': '1', accept: 'application/grpc-web+proto' },
         body: new Uint8Array([0, 0, 0, 0, 0])
       });
       if (!res.ok) return null;
-      const buf = new Uint8Array(await res.arrayBuffer());
-      // Brute-force float scan is inherently fragile (~60% false positives on random
-      // bytes). Collect candidates, prefer values near the previous reading, and
-      // mark source as heuristic so UI can show lower confidence.
-      const candidates = [];
-      for (let i = 0; i < buf.length - 4; i++) {
-        const f = new DataView(buf.buffer, buf.byteOffset + i, 4).getFloat32(0, true);
-        // Exclude NaN/Inf and values that are almost certainly not usage %
-        if (!Number.isFinite(f) || f <= 0.05 || f > 100) continue;
-        // Prefer "nice" usage-like numbers (not scientific-looking extremes)
-        if (f < 0.1 && f !== Math.round(f * 100) / 100) continue;
-        candidates.push({ value: f, offset: i });
-      }
-      if (!candidates.length) return null;
-
-      const now = Date.now();
+      const cands = S.protobufFloatCandidates(new Uint8Array(await res.arrayBuffer()));
+      if (!cands.length) return null;
       let chosen = null;
-      if (lastPaidWeeklyPct != null && now - lastPaidWeeklyAt < 15 * 60 * 1000) {
-        // Prefer candidate closest to last known value (reject implausible jumps)
-        let bestDist = Infinity;
-        for (const c of candidates) {
-          const dist = Math.abs(c.value - lastPaidWeeklyPct);
-          if (dist < bestDist && dist <= 40) {
-            bestDist = dist;
-            chosen = c;
-          }
-        }
-      }
-      // First reading or no stable match: take the median of candidates in (1, 99)
-      // to reduce single-byte noise, still marked as heuristic.
-      if (!chosen) {
-        const mid = candidates
-          .map((c) => c.value)
-          .filter((v) => v >= 1 && v <= 99)
-          .sort((a, b) => a - b);
-        if (mid.length) {
-          chosen = { value: mid[Math.floor(mid.length / 2)], offset: -1 };
-        } else {
-          chosen = candidates[0];
-        }
-      }
-
-      const used = chosen.value;
-      lastPaidWeeklyPct = used;
-      lastPaidWeeklyAt = now;
-      console.warn('[Zero Grok] paid weekly via grpc-heuristic', used.toFixed(2), 'offset', chosen.offset);
+      if (lastPaid) chosen = cands.find((c) => c.path === lastPaid.path && Math.abs(c.value - lastPaid.value) <= 40) || null;
+      if (!chosen) chosen = cands.find((c) => c.value >= 1 && c.value <= 99) || cands[0];
+      lastPaid = chosen;
+      const used = S.clampPct(chosen.value);
       return {
-        provider: 'grok',
-        isFree: false,
-        usedPercent: used,
-        remainingPercent: Math.max(0, 100 - used),
-        weeklyRemaining: Math.max(0, 100 - used),
-        products: [],
-        source: 'grpc-heuristic',
-        windowHint: 'Weekly (estimated)'
+        provider: 'grok', isFree: false,
+        usedPercent: used, remainingPercent: 100 - used, weeklyRemaining: 100 - used,
+        windowHint: S.t('grokWeeklyEst', null, 'Weekly pool (estimated)'),
+        note: S.t('grokHeuristicNote', null, 'Decoded from a binary billing response without a documented field — treat as an estimate.'),
+        source: 'grpc-heuristic'
       };
-    } catch (_) {}
-    return null;
-  }
-
-  function installNetworkHook() {
-    const originalFetch = window.fetch;
-    window.fetch = async function (...args) {
-      const response = await originalFetch.apply(this, args);
-      try {
-        const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
-        if (url.includes('rate-limits')) {
-          const clone = response.clone();
-          clone.json().then(json => {
-            const normalized = normalizeRateLimitPayload(json, 'live');
-            if (normalized) {
-              console.log('[Zero Grok] intercepted live rate-limits', normalized);
-              currentUsage = normalized;
-              updateCanVisual(normalized);
-              updatePanel(normalized);
-              try {
-                if (window.ZeroGrokCanFx) {
-                  window.ZeroGrokCanFx.trackRefill('grok', normalized.remainingPercent, canEl, settings.soundEnabled !== false, { a: '#c41e3a', b: '#fff' });
-                }
-                if (window.ZeroGrokCanFx) {
-                  if (normalized.remainingPercent != null && normalized.remainingPercent <= 2) {
-                    window.ZeroGrokCanFx.startLimitCountdown({
-                      provider: 'grok',
-                      canEl,
-                      resetMs: window.ZeroGrokCanFx.resolveResetMs(normalized),
-                      soundEnabled: settings.soundEnabled !== false
-                    });
-                  } else {
-                    window.ZeroGrokCanFx.stopLimitCountdown('grok');
-                  }
-                }
-              } catch (_) {}
-              try { chrome.runtime.sendMessage({ type: 'USAGE_DATA', payload: normalized }); } catch (_) {}
-            }
-          }).catch(() => {});
-        }
-      } catch (_) {}
-      return response;
-    };
-  }
-
-  async function scrape() {
-    let data = await fetchFreeRateLimits();
-    if (!data) data = await fetchPaidWeekly();
-    if (data) {
-      currentUsage = data;
-      updateCanVisual(data);
-      updatePanel(data);
-      try {
-        if (window.ZeroGrokCanFx) {
-          window.ZeroGrokCanFx.trackRefill('grok', data.remainingPercent, canEl, settings.soundEnabled !== false, { a: '#c41e3a', b: '#fff' });
-        }
-        if (window.ZeroGrokCanFx) {
-          if (data.remainingPercent != null && data.remainingPercent <= 2) {
-            window.ZeroGrokCanFx.startLimitCountdown({
-              provider: 'grok',
-              canEl,
-              resetMs: window.ZeroGrokCanFx.resolveResetMs(data),
-              soundEnabled: settings.soundEnabled !== false
-            });
-          } else {
-            window.ZeroGrokCanFx.stopLimitCountdown('grok');
-          }
-        }
-      } catch (_) {}
-      try { chrome.runtime.sendMessage({ type: 'USAGE_DATA', payload: data }); } catch (_) {}
+    } catch (_) {
+      return null;
     }
   }
 
-  chrome.runtime.onMessage.addListener((msg, _s, sendResponse) => {
-    if (msg.type === 'SCRAPE_USAGE') {
-      scrape().then(() => sendResponse({ ok: true }));
-      return true;
-    }
-    if (msg.type === 'TOGGLE_CAN') {
-      if (!canEl) createCan();
-      const hidden = canEl.style.display === 'none' || canEl.classList.contains('zg-user-hidden');
-      if (hidden) { canEl.style.display = 'flex'; canEl.classList.remove('zg-user-hidden'); }
-      else { canEl.classList.add('zg-user-hidden'); canEl.style.display = 'none'; }
-      sendResponse({ ok: true });
-      return true;
+  function scanBanner(sel) {
+    const hit = P.helpers.scanLimitBanner(sel);
+    return hit ? { provider: 'grok', usedPercent: 100, remainingPercent: 0, windowHint: S.t('limitReached', null, 'Limit reached'), resetHint: hit.text, source: 'dom-limit' } : null;
+  }
+
+  P.register({
+    id: 'grok',
+    initialDelays: [1200, 4000],
+    pollMs: 60000,
+    init({ applyData }) {
+      // Live updates from the page's own rate-limit calls (via page-hook.js).
+      window.addEventListener('message', (e) => {
+        if (e.source !== window || !e.data || e.data.__zeroGrok !== 'rate-limits') return;
+        const probe = PROBES.find((p) => p.modelName === e.data.modelName && (p.requestKind || '') === (e.data.requestKind || ''));
+        const one = normalizeRateLimit(e.data.json, probe ? probe.label : 'Grok');
+        if (!one) return;
+        lastModels.set(one.label, one);
+        applyData(combine([...lastModels.values()]));
+      });
+    },
+    async scrape(ctx) {
+      const free = await fetchRateLimits();
+      if (free.data) return { data: free.data };
+      const paid = await fetchPaidWeekly();
+      if (paid) return { data: paid };
+      const banner = scanBanner(ctx.selectors);
+      if (banner) return { data: banner };
+      if (free.auth) return { status: 'signed-out' };
+      return { status: 'no-data', failure: true, detail: 'no-endpoint' };
     }
   });
-
-  loadSettings();
-  installNetworkHook();
-  setTimeout(scrape, 1200);
-  setTimeout(scrape, 4000);
-  setInterval(scrape, 60_000);
-  console.log('[Zero Grok] content ready');
 })();

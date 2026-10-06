@@ -1,8 +1,17 @@
-/* Zero Grok – Diet Coke style floating can + panel */
+/*
+ * Zero Grok – floating can + panel (shared by every provider).
+ * Colours, timings and surfaces come from utils/tokens.css (injected first).
+ * Motion rules: only opacity / transform are animated (plus the SVG clip `y`
+ * driven by requestAnimationFrame in can-ui.js). Everything is switched off
+ * by the reduce-motion setting (.zg-reduce-motion) and by the OS preference.
+ */
 
-.zg-can-root,
-#zero-grok-can,
-[id^="zero-grok-can-"] {
+.zg-can-root {
+  /* Corner insets. Bottom corners sit above the site's message box: 96px by
+     default, raised further by can-ui.js (avoidComposer) when a taller composer
+     is detected. */
+  --zg-inset: 20px;
+  --zg-bottom-inset: 96px;
   position: fixed;
   z-index: 2147483646;
   width: 72px;
@@ -14,207 +23,217 @@
   user-select: none;
   touch-action: none;
   filter: drop-shadow(0 8px 16px rgba(0,0,0,0.35));
-  transition: transform 0.15s ease;
+  outline: none;
 }
-.zg-can-root:active,
-#zero-grok-can:active,
-[id^="zero-grok-can-"]:active { cursor: grabbing; }
-.zg-can-root.zg-pop-in,
-#zero-grok-can.zg-pop-in,
-[id^="zero-grok-can-"].zg-pop-in {
-  animation: zg-pop-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
+.zg-can-root:focus-visible { outline: 3px solid var(--zg-focus); outline-offset: 3px; border-radius: 12px; box-shadow: 0 0 0 6px rgba(255,255,255,0.85); }
+.zg-can-root:active, .zg-can-root.zg-dragging { cursor: grabbing; }
+.zg-can-root.zg-pop-in { animation: zg-pop-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 @keyframes zg-pop-in {
   0% { transform: scale(0.2) rotate(-12deg); opacity: 0; }
   60% { transform: scale(1.08) rotate(3deg); opacity: 1; }
   100% { transform: scale(1) rotate(0); opacity: 1; }
 }
-.zg-can { position: fixed; }
-.zg-pos-bottom-right { right: 20px; bottom: 20px; left: auto; top: auto; }
-.zg-pos-bottom-left { left: 20px; bottom: 20px; right: auto; top: auto; }
-.zg-pos-top-right { right: 20px; top: 20px; left: auto; bottom: auto; }
-.zg-pos-top-left { left: 20px; top: 20px; right: auto; bottom: auto; }
+.zg-pos-bottom-right { right: var(--zg-inset); bottom: calc(var(--zg-bottom-inset) + env(safe-area-inset-bottom, 0px)); left: auto; top: auto; }
+.zg-pos-bottom-left { left: var(--zg-inset); bottom: calc(var(--zg-bottom-inset) + env(safe-area-inset-bottom, 0px)); right: auto; top: auto; }
+.zg-pos-top-right { right: var(--zg-inset); top: var(--zg-inset); left: auto; bottom: auto; }
+.zg-pos-top-left { left: var(--zg-inset); top: var(--zg-inset); right: auto; bottom: auto; }
 
-.zg-can-body {
-  width: 64px;
-  height: 128px;
-  position: relative;
-}
-.zg-can-svg {
-  width: 64px;
-  height: 128px;
-  display: block;
-}
+.zg-can-body { width: 64px; height: 128px; position: relative; }
+.zg-can-svg { width: 64px; height: 128px; display: block; }
+
+/* % label: drawn on a dark pill so it stays >= 4.5:1 over any liquid colour or bare metal */
 .zg-percent {
-  position: absolute;
-  left: 0; right: 0; bottom: 18px;
-  text-align: center;
-  font-family: system-ui, -apple-system, sans-serif;
-  font-size: 13px;
-  font-weight: 800;
+  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
+  padding: 1px 6px; border-radius: 7px;
+  background: var(--zg-pill);
+  text-align: center; white-space: nowrap;
+  font: 800 13px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif;
   color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  text-shadow: 0 1px 1px rgba(0,0,0,0.6);
   pointer-events: none;
 }
 .zg-percent.zg-ok { color: #e8ffe8; }
 .zg-percent.zg-warn { color: #fff3cd; }
 .zg-percent.zg-critical { color: #ffd0d0; }
-
-.zg-liquid { transition: fill 0.4s ease; }
-.zg-bubble {
-  fill: rgba(255,255,255,0.55);
-  animation: zg-rise linear infinite;
+/* reset countdown / weekly / "est." – readable 11px pill under the can */
+.zg-secondary {
+  position: absolute; left: 50%; top: calc(100% + 3px); transform: translateX(-50%);
+  padding: 1px 6px; border-radius: 6px;
+  background: var(--zg-pill);
+  text-align: center; white-space: nowrap;
+  font: 600 11px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+  color: #fff;
+  pointer-events: none;
 }
+.zg-can-root.zg-estimate .zg-can-svg { opacity: 0.85; }
+.zg-can-root.zg-needs-update .zg-percent { color: #ffd166; }
+
+/* minimize button (shows on hover/focus) – 24px target */
+.zg-mini-btn {
+  position: absolute; top: -4px; right: -4px;
+  width: 24px; height: 24px; padding: 0;
+  border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.85);
+  background: rgba(20,20,22,0.9); color: #fff;
+  font: 700 14px/20px system-ui, sans-serif;
+  cursor: pointer; opacity: 0; transition: opacity var(--zg-dur-fast) ease;
+}
+.zg-can-root:hover .zg-mini-btn, .zg-can-root:focus-within .zg-mini-btn { opacity: 1; }
+.zg-mini-btn:focus-visible { outline: 2px solid var(--zg-focus); outline-offset: 2px; }
+
+/* minimized: a 28px status ring (level colour, brand colour when unknown) */
+.zg-can-root { --zg-dot-color: var(--zg-brand, #8a8f98); }
+.zg-can-root.zg-lvl-ok { --zg-dot-color: var(--zg-ok-bar); }
+.zg-can-root.zg-lvl-warn { --zg-dot-color: var(--zg-warn-bar); }
+.zg-can-root.zg-lvl-critical { --zg-dot-color: var(--zg-crit-bar); }
+.zg-dot {
+  display: none; position: relative; box-sizing: border-box;
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 3px solid var(--zg-dot-color);
+  background: rgba(20,20,22,0.9);
+  box-shadow: 0 0 0 1.5px rgba(255,255,255,0.9);
+}
+.zg-dot::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--zg-dot-color); }
+.zg-can-root.zg-mini { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)); }
+.zg-can-root.zg-mini .zg-can-body, .zg-can-root.zg-mini .zg-mini-btn { display: none; }
+.zg-can-root.zg-mini .zg-dot { display: block; }
+.zg-can-root.zg-mini:focus-visible { border-radius: 50%; }
+
+.zg-bubble { fill: rgba(255,255,255,0.55); animation: zg-rise linear infinite; }
 @keyframes zg-rise {
   0% { transform: translateY(0); opacity: 0.7; }
   80% { opacity: 0.35; }
   100% { transform: translateY(-70px); opacity: 0; }
 }
-.zg-condensation circle {
-  fill: rgba(255,255,255,0.45);
-  animation: zg-drip 3.5s ease-in-out infinite;
-}
+.zg-condensation circle { fill: rgba(255,255,255,0.45); animation: zg-drip 3.5s ease-in-out infinite; }
 @keyframes zg-drip {
   0%, 100% { opacity: 0.25; transform: translateY(0); }
   50% { opacity: 0.7; transform: translateY(4px); }
 }
 
-#zero-grok-panel {
-  position: fixed;
-  z-index: 2147483647;
-  width: 260px;
-  background: rgba(20,20,22,0.94);
-  color: #f2f2f2;
-  border-radius: 14px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
-  border: 1px solid rgba(255,255,255,0.08);
-  font-family: system-ui, -apple-system, sans-serif;
-  overflow: hidden;
-  backdrop-filter: blur(12px);
+/* at-limit: a red halo behind the can that pulses with opacity + scale only (no filter animation) */
+.zg-can-root::before {
+  content: ""; position: absolute; z-index: -1; pointer-events: none;
+  /* wider than the can so the glow shows around it, not just behind it */
+  left: -18px; right: -18px; top: -6px; bottom: 6px; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(231,76,60,0.85) 55%, rgba(231,76,60,0.35) 78%, rgba(231,76,60,0));
+  opacity: 0; transform: scale(0.92);
 }
-.zg-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  font-weight: 700;
-  font-size: 13px;
-}
-.zg-close {
-  background: transparent;
-  border: none;
-  color: #aaa;
-  font-size: 18px;
-  cursor: pointer;
-  line-height: 1;
-  padding: 0 4px;
-}
-.zg-close:hover { color: #fff; }
-.zg-panel-body { padding: 16px 14px 14px; }
-.zg-big-percent {
-  font-size: 42px;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-.zg-label {
-  font-size: 12px;
-  opacity: 0.7;
-  margin-top: 2px;
-  margin-bottom: 10px;
-}
-.zg-bar-wrap {
-  height: 8px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 99px;
-  overflow: hidden;
-}
-.zg-bar {
-  height: 100%;
-  width: 0%;
-  border-radius: 99px;
-  background: #27ae60;
-  transition: width 0.45s ease, background 0.3s ease;
-}
-.zg-bar.zg-ok { background: #27ae60; }
-.zg-bar.zg-warn { background: #f39c12; }
-.zg-bar.zg-critical { background: #e74c3c; }
-.zg-reset {
-  margin-top: 10px;
-  font-size: 11px;
-  opacity: 0.75;
-  line-height: 1.35;
-  min-height: 1.35em;
-}
-.zg-products, .zg-hint {
-  margin-top: 8px;
-  font-size: 11px;
-  opacity: 0.65;
-}
-.zg-footer {
-  margin-top: 12px;
-  display: flex;
-  gap: 8px;
-}
-.zg-footer button, #zg-refresh {
-  flex: 1;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: #eee;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 12px;
-  cursor: pointer;
-}
-.zg-footer button:hover, #zg-refresh:hover {
-  background: rgba(255,255,255,0.14);
+.zg-can-root.zg-mini::before { left: -8px; right: -8px; top: -8px; bottom: -8px; border-radius: 50%; }
+.zg-can-root.zg-at-limit::before { animation: zg-halo 1.4s ease-in-out infinite; }
+@keyframes zg-halo {
+  0%, 100% { opacity: 0.35; transform: scale(0.94); }
+  50% { opacity: 1; transform: scale(1.06); }
 }
 
-/* Fizz particles (first-use / refill) */
-.zg-fizz-particle {
+/* reduce motion (setting) */
+.zg-reduce-motion .zg-bubble, .zg-reduce-motion .zg-condensation circle,
+.zg-can-root.zg-reduce-motion, .zg-can-root.zg-reduce-motion::before { animation: none !important; }
+.zg-can-root.zg-reduce-motion.zg-at-limit::before { opacity: 0.75; transform: none; }
+.zg-reduce-motion .zg-bubbles { display: none; }
+.zg-panel.zg-reduce-motion, .zg-panel.zg-reduce-motion .zg-bar, .zg-can-root.zg-reduce-motion .zg-mini-btn { transition: none !important; }
+/* reduce motion (OS preference) */
+@media (prefers-reduced-motion: reduce) {
+  .zg-bubble, .zg-condensation circle, .zg-can-root, .zg-can-root::before, .zg-can-root.zg-pop-in, .zg-fizz-particle { animation: none !important; }
+  .zg-can-root.zg-at-limit::before { opacity: 0.75; transform: none; }
+  .zg-bubbles { display: none; }
+  .zg-panel, .zg-panel .zg-bar, .zg-mini-btn { transition: none !important; }
+}
+
+/* ---------------- panel ---------------- */
+/* Stays in the DOM; open/close is an opacity + transform transition. When closed
+   it is visibility:hidden + inert + aria-hidden (set in provider-core.js). */
+.zg-panel {
   position: fixed;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  pointer-events: none;
   z-index: 2147483647;
+  width: 272px;
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-align: left;
+  background: var(--zg-surface);
+  color: var(--zg-text);
+  border: 1px solid var(--zg-line);
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(8px) scale(0.97);
+  transform-origin: bottom right;
+  pointer-events: none;
+  transition: opacity var(--zg-dur-fast) var(--zg-ease-in), transform var(--zg-dur-fast) var(--zg-ease-in), visibility 0s linear var(--zg-dur-fast);
+}
+.zg-panel.zg-open {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition: opacity var(--zg-dur) var(--zg-ease-out), transform var(--zg-dur) var(--zg-ease-out), visibility 0s;
+}
+.zg-panel * { box-sizing: border-box; }
+.zg-panel :focus-visible { outline: 2px solid var(--zg-focus); outline-offset: 2px; }
+.zg-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; font-weight: 700; font-size: 13px;
+  border-bottom: 1px solid var(--zg-line);
+}
+.zg-close {
+  background: transparent; border: none; color: var(--zg-muted); font-size: 18px; cursor: pointer; line-height: 1;
+  min-width: 24px; min-height: 24px; padding: 0 4px; border-radius: 6px;
+}
+.zg-close:hover, .zg-close:focus-visible { color: var(--zg-text); background: var(--zg-chip); }
+.zg-panel-body { padding: 14px; }
+.zg-big-percent { font-size: 40px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.zg-label { font-size: 12px; color: var(--zg-muted); margin: 2px 0 10px; }
+.zg-bar-wrap { height: 8px; background: var(--zg-track); border-radius: 99px; overflow: hidden; }
+/* full-width fill scaled with transform (no layout per frame) */
+.zg-bar {
+  height: 100%; width: 100%;
+  transform-origin: left center; transform: scaleX(0);
+  background: var(--zg-ok-bar);
+  transition: transform 0.45s var(--zg-ease-out), background-color 0.3s ease;
+}
+.zg-bar.zg-ok { background: var(--zg-ok-bar); }
+.zg-bar.zg-warn { background: var(--zg-warn-bar); }
+.zg-bar.zg-critical { background: var(--zg-crit-bar); }
+.zg-meta-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 11px; flex-wrap: wrap; }
+.zg-conf { padding: 1px 7px; border-radius: 99px; font-weight: 600; font-size: 10.5px; background: var(--zg-chip); color: var(--zg-muted); }
+.zg-conf-official { background: var(--zg-official-bg); color: var(--zg-official-text); }
+.zg-conf-page { background: var(--zg-page-bg); color: var(--zg-page-text); }
+.zg-conf-estimate { background: var(--zg-estimate-bg); color: var(--zg-estimate-text); }
+.zg-updated { color: var(--zg-muted); }
+.zg-reset, .zg-forecast, .zg-status, .zg-suggest { margin-top: 8px; font-size: 11.5px; line-height: 1.35; }
+.zg-reset:empty, .zg-forecast:empty, .zg-status:empty, .zg-suggest:empty, .zg-breakdown:empty { display: none; }
+.zg-forecast { font-weight: 600; }
+.zg-status { color: var(--zg-muted); }
+.zg-status-warn { color: var(--zg-warn-text); font-weight: 600; }
+.zg-suggest { padding: 6px 8px; border-radius: 8px; background: var(--zg-info); }
+.zg-breakdown { margin-top: 10px; border-top: 1px solid var(--zg-line); padding-top: 8px; }
+.zg-bd-row { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; padding: 2px 0; }
+.zg-bd-label { color: var(--zg-muted); }
+.zg-bd-val { font-weight: 600; white-space: nowrap; }
+.zg-footer { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+.zg-btn {
+  flex: 1 1 auto;
+  background: var(--zg-btn);
+  border: 1px solid var(--zg-line);
+  color: var(--zg-btn-text);
+  border-radius: 8px;
+  padding: 7px 8px;
+  min-height: 30px;
+  font: 600 11.5px system-ui, sans-serif;
+  cursor: pointer;
+}
+.zg-btn:hover { filter: brightness(0.96); }
+.zg-theme-dark .zg-btn:hover { filter: brightness(1.15); }
+
+/* fizz particles (first use / refill) – never spawned with reduced motion (can-fx.js) */
+.zg-fizz-particle {
+  position: fixed; width: 6px; height: 6px; border-radius: 50%;
+  pointer-events: none; z-index: 2147483647;
   animation: zg-fizz 0.75s ease-out forwards;
 }
 @keyframes zg-fizz {
   0% { transform: translate(0,0) scale(1); opacity: 1; }
   100% { transform: translate(var(--tx), var(--ty)) scale(0.2); opacity: 0; }
-}
-
-/* At-limit pulse */
-.zg-can-root.zg-at-limit,
-#zero-grok-can.zg-at-limit,
-[id^="zero-grok-can-"].zg-at-limit {
-  animation: zg-limit-pulse 1.4s ease-in-out infinite;
-}
-@keyframes zg-limit-pulse {
-  0%, 100% { filter: drop-shadow(0 8px 16px rgba(0,0,0,0.35)); }
-  50% { filter: drop-shadow(0 8px 22px rgba(231,76,60,0.55)); }
-}
-
-/* Dark page tweaks */
-.zg-dark #zero-grok-panel {
-  background: rgba(12,12,14,0.96);
-}
-
-/* Secondary label under percent (weekly etc) */
-.zg-secondary {
-  position: absolute;
-  left: 0; right: 0;
-  bottom: 4px;
-  text-align: center;
-  font-size: 9px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.75);
-  pointer-events: none;
-}
-
-/* Ensure bubbles stay visible over white soda fizz */
-.zg-bubble {
-  fill: rgba(255, 255, 255, 0.55) !important;
 }

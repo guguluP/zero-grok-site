@@ -1,38 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="zg-page">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Zero Grok</title>
+  <link rel="stylesheet" href="../utils/tokens.css" />
+  <link rel="stylesheet" href="../utils/theme.css" />
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <div class="header">
+  <header class="header">
     <h1>Zero Grok</h1>
-    <p class="sub">All AI usage at a glance</p>
-  </div>
+    <p class="sub" data-i18n="popupSubtitle">All AI usage at a glance</p>
+  </header>
 
-  <div id="update-banner" class="update-banner" hidden>
-    <div class="update-title">Update available</div>
-    <div class="update-notes" id="update-notes"></div>
-    <div class="update-actions">
-      <button type="button" id="update-download">Download ZIP</button>
-      <button type="button" id="update-dismiss" class="ghost">Later</button>
+  <div id="update-banner" class="banner update-banner" hidden>
+    <div class="banner-title" id="update-title" data-i18n="updateAvailable">Update available</div>
+    <div class="banner-notes" id="update-notes"></div>
+    <div class="banner-actions">
+      <button type="button" id="update-download" data-i18n="updateDownload">Download ZIP</button>
+      <button type="button" id="update-dismiss" class="ghost" data-i18n="updateLater">Later</button>
     </div>
   </div>
 
-  <div id="providers" class="providers">
-  </div>
+  <div id="suggest-banner" class="banner suggest-banner" role="status" hidden></div>
 
-  <p class="empty-hint" id="empty-hint">Open Grok, Claude, ChatGPT, or Gemini while signed in — numbers appear after the first scrape.</p>
+  <main id="providers" class="providers" aria-live="polite"></main>
+
+  <p class="empty-hint" id="empty-hint" data-i18n="popupEmpty">Open Grok, Claude, ChatGPT or Gemini while signed in — numbers appear after the first read.</p>
+
+  <section class="history" id="history" hidden>
+    <div class="history-head">
+      <h2 data-i18n="historyTitle">History</h2>
+      <select id="history-provider" data-i18n-aria="historyProvider" aria-label="Provider"></select>
+      <div class="seg" role="group" data-i18n-aria="historyRange" aria-label="Range">
+        <button type="button" data-days="7" class="on" aria-pressed="true" data-i18n="range7d">7d</button>
+        <button type="button" data-days="30" aria-pressed="false" data-i18n="range30d">30d</button>
+      </div>
+    </div>
+    <div id="chart" class="chart"></div>
+    <p class="chart-caption" id="chart-caption"></p>
+  </section>
 
   <div class="actions">
-    <button id="refresh">Refresh all</button>
-    <button id="open-settings">Options</button>
+    <button id="refresh" class="primary" data-i18n="refreshAll">Refresh all</button>
+    <button id="share" data-i18n="shareCard">Share card</button>
+    <button id="open-settings" data-i18n="options">Options</button>
   </div>
 
-  <p class="privacy">All data stays in your browser. No servers.</p>
+  <p class="privacy" data-i18n="privacyNote">All data stays in your browser. No servers, no analytics.</p>
 
+  <script src="../utils/shared.js"></script>
+  <script src="../utils/page.js"></script>
+  <script src="../utils/share-card.js"></script>
   <script src="popup.js" type="module"></script>
 </body>
 </html>

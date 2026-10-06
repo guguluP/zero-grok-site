@@ -37,7 +37,7 @@ h1 {
   font-size: 15px;
   font-weight: 800;
   margin-bottom: 12px;
-  color: #e31837;
+  color: #ff6b7d; /* 4.85:1+ on the card (was #e31837, 2.8:1) */
   text-transform: uppercase;
   letter-spacing: 0.6px;
 }
@@ -111,5 +111,15 @@ footer {
 .fine {
   margin-top: 14px;
   font-size: 12px;
-  opacity: 0.5;
+  color: rgba(245,245,245,0.7);
 }
+
+.prov-grid { display: grid; gap: 8px; margin-top: 10px; }
+.prov-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+.prov-row label { display: flex; align-items: center; gap: 8px; font-weight: 600; margin: 0; }
+.prov-row .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.prov-row .tag { font-size: 11px; color: rgba(245,245,245,0.7); font-weight: 500; }
+.prov-row select { background: rgba(0,0,0,0.3); color: #f5f5f5; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 4px 6px; }
+button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid #8ab4f8; outline-offset: 2px; }
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { transition: none !important; animation: none !important; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

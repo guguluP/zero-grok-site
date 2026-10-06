@@ -1,414 +1,137 @@
 /**
- * Zero Grok – Gemini (Free / AI Plus / Pro / Ultra)
+ * Zero Grok – Gemini (Free / AI Pro / Ultra)
  *
- * Data source: gemini.google.com/usage
- *   - Live page scrape when on /usage (best)
- *   - Fetch HTML + iframe (DNR strips XFO)
- *   - Network intercept for usage JSON
- *   - On-page limit banners
- *
+ * Sources, in order:
+ *   1. Live DOM of gemini.google.com/usage (re-read as the SPA renders it)
+ *   2. Same-origin fetch of /usage HTML (works when the numbers are server-rendered)
+ *   3. Limit banners in alert/toast surfaces
+ *   4. The last /usage reading cached by the background (shown with its age)
+ * v1.5 no longer strips X-Frame-Options/CSP to iframe /usage – that was too broad.
  * Gemini reports USED percent; we convert to remaining for the can.
  */
-(async function () {
+(function () {
   'use strict';
-  if (window.__ZERO_GROK_GEMINI__) return;
-  window.__ZERO_GROK_GEMINI__ = true;
-  if (window.self !== window.top) return;
+  const S = window.ZeroGrokShared;
+  const P = window.ZeroGrokProvider;
+  if (!S || !P || window.self !== window.top) return;
 
-  let currentUsage = null;
-  let canEl = null;
-  let panelEl = null;
-  let isExpanded = false;
-  let settings = { canPosition: 'bottom-right', theme: 'auto', enableGemini: true };
-  let iframeEl = null;
-  let iframePoll = null;
+  const onUsagePage = () => location.pathname.startsWith('/usage');
 
-  function loadSettings() {
-    try {
-      chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (res) => {
-        if (res) settings = { ...settings, ...res };
-        if (settings.enableGemini === false) return;
-        if (settings.hideCan) return;
-        showCan();
-        updateCanVisual(null);
-      });
-    } catch (_) {
-      showCan();
-      updateCanVisual(null);
+  function first(doc, list) {
+    for (const sel of list || []) {
+      try {
+        const el = doc.querySelector(sel);
+        if (el) return el;
+      } catch (_) {}
     }
+    return null;
   }
 
-  function createCan() {
-    if (canEl) return canEl;
-    if (window.ZeroGrokCanUI) {
-      canEl = window.ZeroGrokCanUI.mountCan({
-        provider: 'gemini',
-        settings,
-        onClick: togglePanel,
-        colors: { a: '#4285f4', b: '#fff' }
-      });
-      return canEl;
-    }
-    canEl = document.createElement('div');
-    canEl.id = 'zero-grok-can-gemini';
-    canEl.classList.add('zg-can-root');
-    canEl.dataset.provider = 'gemini';
-    canEl.innerHTML = '<div class="zg-can-body"><div class="zg-percent" id="zg-percent">--%</div></div>';
-    canEl.addEventListener('click', togglePanel);
-    document.body.appendChild(canEl);
-    canEl.className = 'zg-can-root zg-can zg-pos-' + (settings.canPosition || 'bottom-right');
-    return canEl;
-  }
-
-  function showCan() { createCan(); canEl.style.display = 'flex'; }
-
-  function updateCanVisual(data) {
-    if (!canEl) return;
-    const rem = data?.remainingPercent;
-    if (window.ZeroGrokCanUI) {
-      window.ZeroGrokCanUI.setLiquidLevel(canEl, rem);
-      if (data && Number.isFinite(data.weeklyRemaining)) {
-        window.ZeroGrokCanUI.setSecondary(canEl, 'W ' + Math.round(data.weeklyRemaining) + '%');
-      } else {
-        window.ZeroGrokCanUI.setSecondary(canEl, '');
+  function readBlock(el) {
+    if (!el) return null;
+    let used = null, reset = '';
+    const texts = Array.from(el.querySelectorAll('p, div, span, h1, h2, h3, li, label'))
+      .map((n) => (n.textContent || '').trim()).filter((x) => x && x.length < 120);
+    for (const text of texts) {
+      const m = text.match(/(\d{1,3})\s*%/);
+      if (m && used == null) {
+        const v = parseInt(m[1], 10);
+        if (v >= 0 && v <= 100) used = v;
       }
-      return;
+      if (!reset && /reset|refill/i.test(text)) reset = text.slice(0, 80);
     }
-    const percentEl = canEl.querySelector('#zg-percent');
-    if (percentEl) {
-      if (rem == null || !Number.isFinite(rem)) {
-        percentEl.textContent = '--%';
-        percentEl.style.color = '#888';
-      } else {
-        percentEl.textContent = Math.round(rem) + '%';
-        percentEl.style.color = '';
-      }
-    }
+    return used == null ? null : { used, reset };
   }
 
-  function createPanel() {
-    if (panelEl) return panelEl;
-    panelEl = document.createElement('div');
-    panelEl.id = 'zero-grok-panel';
-    panelEl.innerHTML = `
-      <div class="zg-panel-header"><span>Zero · Gemini</span><button class="zg-close">×</button></div>
-      <div class="zg-panel-body">
-        <div class="zg-big-percent" id="zg-big-percent">--%</div>
-        <div class="zg-label" id="zg-label">remaining</div>
-        <div class="zg-bar-wrap"><div class="zg-bar" id="zg-bar"></div></div>
-        <div class="zg-reset" id="zg-reset">Waiting…</div>
-        <div id="zg-weekly-row" style="margin-top:10px;font-size:12px;opacity:0.85;display:none">
-          <div id="zg-weekly-label">Weekly</div>
-          <div class="zg-bar-wrap" style="margin-top:4px"><div class="zg-bar" id="zg-weekly-bar" style="background:#4285f4"></div></div>
-        </div>
-        <div class="zg-footer"><button id="zg-refresh">Refresh</button>
-        <button id="zg-open-usage" style="margin-left:6px">Open /usage</button></div>
-      </div>`;
-    panelEl.querySelector('.zg-close').onclick = () => { isExpanded = false; panelEl.classList.remove('zg-open'); };
-    panelEl.querySelector('#zg-refresh').onclick = () => scrape();
-    panelEl.querySelector('#zg-open-usage').onclick = () => { window.open('https://gemini.google.com/usage', '_blank'); };
-    document.body.appendChild(panelEl);
-    return panelEl;
-  }
-
-  function togglePanel() {
-    createPanel();
-    isExpanded = !isExpanded;
-    panelEl.classList.toggle('zg-open', isExpanded);
-    if (isExpanded) updatePanel(currentUsage);
-  }
-
-  const STATUS_MESSAGES = {
-    'signed-out': 'Sign in to Gemini, then open /usage once',
-    'no-data': 'Open gemini.google.com/usage once, then Refresh',
-    'unavailable': 'Usage not available yet — open /usage or try a chat first'
-  };
-  let lastStatus = 'signed-out';
-
-  function updatePanel(data) {
-    if (!panelEl) return;
-    const rem = data?.remainingPercent;
-    const big = panelEl.querySelector('#zg-big-percent');
-    const bar = panelEl.querySelector('#zg-bar');
-    const reset = panelEl.querySelector('#zg-reset');
-    const label = panelEl.querySelector('#zg-label');
-    const weeklyRow = panelEl.querySelector('#zg-weekly-row');
-    const weeklyBar = panelEl.querySelector('#zg-weekly-bar');
-    const weeklyLabel = panelEl.querySelector('#zg-weekly-label');
-
-    if (big) big.textContent = (rem == null || !Number.isFinite(rem)) ? '--%' : Math.round(rem) + '%';
-    if (label) label.textContent = data?.windowHint || 'remaining';
-    if (bar) {
-      bar.style.width = (rem == null || !Number.isFinite(rem)) ? '0%' : rem + '%';
-      bar.className = 'zg-bar ' + ((rem == null || !Number.isFinite(rem)) ? '' : rem <= 10 ? 'zg-critical' : rem <= 30 ? 'zg-warn' : 'zg-ok');
-    }
-    if (reset) {
-      reset.textContent = !data
-        ? (STATUS_MESSAGES[lastStatus] || STATUS_MESSAGES['no-data'])
-        : [data.windowHint, data.resetHint, data.source].filter(Boolean).join(' · ');
-    }
-    if (weeklyRow && weeklyBar && weeklyLabel) {
-      if (data && Number.isFinite(data.weeklyRemaining)) {
-        weeklyRow.style.display = 'block';
-        weeklyBar.style.width = data.weeklyRemaining + '%';
-        weeklyLabel.textContent = 'Weekly ' + Math.round(data.weeklyRemaining) + '% left' +
-          (data.weeklyResetHint ? ' · ' + data.weeklyResetHint : '');
-      } else {
-        weeklyRow.style.display = 'none';
-      }
-    }
-  }
-
-  function applyUsage(data, status) {
-    lastStatus = status || 'signed-out';
-    if (!data || !Number.isFinite(data.remainingPercent)) {
-      currentUsage = null;
-      updateCanVisual(null);
-      updatePanel(null);
-      return;
-    }
-    currentUsage = data;
-    updateCanVisual(data);
-    updatePanel(data);
-    try {
-      if (window.ZeroGrokCanFx && data) {
-        window.ZeroGrokCanFx.trackRefill('gemini', data.remainingPercent, canEl, settings.soundEnabled !== false, { a: '#4285f4', b: '#fff' });
-      }
-    } catch (_) {}
-    try {
-      if (window.ZeroGrokCanFx) {
-        const panelReset = panelEl && panelEl.querySelector('#zg-reset');
-        if (data.remainingPercent != null && data.remainingPercent <= 2) {
-          window.ZeroGrokCanFx.startLimitCountdown({
-            provider: 'gemini',
-            data,
-            canEl,
-            panelResetEl: panelReset,
-            onRefilled: () => { try { scrape(); } catch (_) {} }
-          });
-        } else {
-          window.ZeroGrokCanFx.stopLimitCountdown('gemini');
-          canEl && canEl.classList.remove('zg-at-limit');
-        }
-      }
-    } catch (_) {}
-    try { chrome.runtime.sendMessage({ type: 'USAGE_DATA', payload: data }); } catch (_) {}
-    console.log('[Zero Grok] Gemini OK', Math.round(data.remainingPercent) + '%', data.windowHint, 'via', data.source);
-  }
-
-  function extractFromDocument(doc) {
+  function extract(doc, sel, allowBodyScan) {
     if (!doc) return null;
-    let currentUsed = null, currentReset = '', weeklyUsed = null, weeklyReset = '';
-    const currentEl = doc.querySelector('[data-test-id="gxu-currently"]') || doc.querySelector('.gxu-currently');
-    const weeklyEl = doc.querySelector('[data-test-id="gxu-weekly"]') || doc.querySelector('.gxu-weekly');
-    function readBlock(el, assignUsed, assignReset) {
-      if (!el) return;
-      const texts = Array.from(el.querySelectorAll('p, div, span, h1, h2, h3, li, label')).map(n => (n.textContent || '').trim()).filter(Boolean);
-      for (const text of texts) {
-        const m = text.match(/(\d{1,3})\s*%\s*(?:used|used up)?/i) || text.match(/(\d{1,3})\s*%/);
-        if (m && assignUsed.value == null) {
-          const v = parseInt(m[1], 10);
-          if (v >= 0 && v <= 100) assignUsed.value = v;
-        }
-        if (/reset|resets|refill/i.test(text) && !assignReset.value) assignReset.value = text.slice(0, 80);
+    const blocks = (sel && sel.usageBlocks) || {};
+    let cur = readBlock(first(doc, blocks.current));
+    let wk = readBlock(first(doc, blocks.weekly));
+    if (!cur && !wk && allowBodyScan) {
+      // Only on the /usage page itself – never scan chat transcripts for "%".
+      const lines = (doc.body?.innerText || '').split(/\n+/).map((x) => x.trim()).filter(Boolean);
+      for (let i = 0; i < lines.length; i++) {
+        const m = lines[i].match(/(\d{1,3})\s*%\s*(?:used)?/i);
+        if (!m) continue;
+        const v = parseInt(m[1], 10);
+        if (v < 0 || v > 100) continue;
+        const ctx = ((lines[i - 1] || '') + ' ' + lines[i] + ' ' + (lines[i + 1] || '')).toLowerCase();
+        const resetLine = [lines[i + 1], lines[i + 2]].find((x) => x && /reset|refill/i.test(x)) || '';
+        if (/week|7[\s-]?day/.test(ctx)) { if (!wk) wk = { used: v, reset: resetLine }; }
+        else if (!cur) cur = { used: v, reset: resetLine };
       }
     }
-    const cur = { value: null }, curR = { value: '' }, wk = { value: null }, wkR = { value: '' };
-    readBlock(currentEl, cur, curR);
-    readBlock(weeklyEl, wk, wkR);
-    currentUsed = cur.value; currentReset = curR.value;
-    weeklyUsed = wk.value; weeklyReset = wkR.value;
-    if (currentUsed == null && weeklyUsed == null) {
-      const bodyText = doc.body?.innerText || '';
-      const chunks = bodyText.split(/\n+/).map(s => s.trim()).filter(Boolean);
-      for (let i = 0; i < chunks.length; i++) {
-        const line = chunks[i];
-        const pct = line.match(/(\d{1,3})\s*%/);
-        if (!pct) continue;
-        const val = parseInt(pct[1], 10);
-        if (val < 0 || val > 100) continue;
-        const context = ((chunks[i - 1] || '') + ' ' + line + ' ' + (chunks[i + 1] || '')).toLowerCase();
-        const isWeekly = /week|weekly|7[\s-]?day/.test(context);
-        if (isWeekly && weeklyUsed == null) weeklyUsed = val;
-        else if (currentUsed == null) currentUsed = val;
-      }
-    }
-    if (currentUsed == null && weeklyUsed == null) return null;
+    if (!cur && !wk) return null;
     const buckets = [];
-    if (currentUsed != null) buckets.push({ used: currentUsed, remaining: Math.max(0, 100 - currentUsed), hint: '5-hour session', reset: currentReset });
-    if (weeklyUsed != null) buckets.push({ used: weeklyUsed, remaining: Math.max(0, 100 - weeklyUsed), hint: 'Weekly', reset: weeklyReset });
+    if (cur) buckets.push({ ...cur, label: S.t('geminiCurrent', null, 'Current window') });
+    if (wk) buckets.push({ ...wk, label: S.t('weekly', null, 'Weekly') });
     buckets.sort((a, b) => b.used - a.used);
     const top = buckets[0];
     return {
-      provider: 'gemini', usedPercent: top.used, remainingPercent: top.remaining,
-      windowHint: top.hint, resetHint: top.reset || '',
-      weeklyUsed, weeklyRemaining: weeklyUsed != null ? Math.max(0, 100 - weeklyUsed) : null,
-      weeklyResetHint: weeklyReset || '', source: 'usage-page'
+      provider: 'gemini',
+      usedPercent: top.used,
+      remainingPercent: 100 - top.used,
+      windowHint: top.label,
+      resetHint: top.reset || '',
+      resetAt: S.parseRelativeReset(top.reset),
+      weeklyUsed: wk ? wk.used : null,
+      weeklyRemaining: wk ? 100 - wk.used : null,
+      weeklyResetHint: wk ? wk.reset : '',
+      breakdown: buckets.map((b) => ({ label: b.label, remainingPercent: 100 - b.used, resetAt: S.parseRelativeReset(b.reset) })),
+      source: 'usage-page'
     };
   }
 
-  function scrapeDomLimit() {
-    // Scope to alert/banner surfaces — never full-page innerText (chat false positives).
-    const candidates = [];
-    const selectors = [
-      '[role="alert"]',
-      '[role="status"]',
-      '[class*="toast"]',
-      '[class*="banner"]',
-      '[class*="notice"]',
-      '[class*="alert"]',
-      '[class*="limit"]',
-      '[data-test-id*="limit"]',
-      '[data-testid*="limit"]'
-    ];
-    for (const sel of selectors) {
-      try {
-        document.querySelectorAll(sel).forEach((el) => {
-          const t = (el.innerText || el.textContent || '').trim();
-          if (t && t.length < 600) candidates.push(t);
-        });
-      } catch (_) {}
-    }
-    const limitRe = /you(?:'ve| have)?\s+(?:reached|hit)\s+(?:your\s+)?(?:usage\s+)?limit/i;
-    const limitRe2 = /usage\s+limit\s+(?:reached|exceeded)/i;
-    const hasLimitUi =
-      !!document.querySelector('button[disabled], [aria-disabled="true"], textarea[disabled]') ||
-      /try again|come back|upgrade|resets?/i.test(candidates.join(' ').slice(0, 2000));
-    for (const text of candidates) {
-      if ((limitRe.test(text) || limitRe2.test(text)) && hasLimitUi) {
-        return {
-          provider: 'gemini',
-          usedPercent: 100,
-          remainingPercent: 0,
-          windowHint: 'Limit reached',
-          resetHint: 'Wait for reset',
-          source: 'dom-limit'
-        };
-      }
-    }
-    return null;
-  }
-
-  function scrapeLivePage() {
+  async function viaFetch(sel) {
     try {
-      const data = extractFromDocument(document);
-      if (data) { data.source = location.pathname.includes('/usage') ? 'live-page' : 'live-dom'; return data; }
-    } catch (_) {}
-    return null;
-  }
-
-  function ensureIframe() {
-    if (iframeEl && document.body.contains(iframeEl)) return iframeEl;
-    iframeEl = document.createElement('iframe');
-    iframeEl.id = 'zero-grok-gemini-usage-iframe';
-    iframeEl.src = 'https://gemini.google.com/usage';
-    iframeEl.setAttribute('aria-hidden', 'true');
-    Object.assign(iframeEl.style, { position: 'fixed', width: '1px', height: '1px', border: 'none', opacity: '0', pointerEvents: 'none', left: '-9999px', top: '0' });
-    document.body.appendChild(iframeEl);
-    return iframeEl;
-  }
-
-  function scrapeViaIframe() {
-    return new Promise((resolve) => {
-      const iframe = ensureIframe();
-      iframe.src = 'https://gemini.google.com/usage?t=' + Date.now();
-      let attempts = 0;
-      if (iframePoll) clearInterval(iframePoll);
-      iframePoll = setInterval(() => {
-        attempts++;
-        try {
-          const doc = iframe.contentDocument || iframe.contentWindow?.document;
-          if (!doc) { if (attempts >= 30) { clearInterval(iframePoll); iframePoll = null; resolve(null); } return; }
-          const data = extractFromDocument(doc);
-          if (data) { data.source = 'usage-iframe'; clearInterval(iframePoll); iframePoll = null; resolve(data); return; }
-        } catch (_) { if (attempts >= 10) { clearInterval(iframePoll); iframePoll = null; resolve(null); } }
-        if (attempts >= 30) { clearInterval(iframePoll); iframePoll = null; resolve(null); }
-      }, 500);
-    });
-  }
-
-  async function scrapeViaFetch() {
-    try {
-      const res = await fetch('https://gemini.google.com/usage?t=' + Date.now(), { credentials: 'include', cache: 'no-store', headers: { Accept: 'text/html' } });
+      const res = await fetch(location.origin + '/usage', { credentials: 'include', cache: 'no-store', headers: { Accept: 'text/html' } });
       if (res.status === 401 || res.status === 403) return { auth: true };
       if (!res.ok) return null;
+      if (/accounts\.google\.com/.test(res.url)) return { auth: true };
       const html = await res.text();
-      if (/accounts\\.google\\.com|ServiceLogin|Sign in/i.test(html) && !/\\d{1,3}\\s*%/i.test(html)) return { auth: true };
+      if (html.length > 3_000_000) return null;
+      // DOMParser in an inert document (no scripts run).
       const doc = new DOMParser().parseFromString(html, 'text/html');
-      const data = extractFromDocument(doc);
-      if (data) data.source = 'usage-fetch';
-      return data;
-    } catch (e) {
-      console.warn('[Zero Grok] Gemini fetch error', e.message);
+      const d = extract(doc, sel, false);
+      if (d) d.source = 'usage-fetch';
+      return d;
+    } catch (_) {
       return null;
     }
   }
 
-  function installNetworkHook() {
-    try {
-      const origFetch = window.fetch;
-      window.fetch = async function (...args) {
-        const response = await origFetch.apply(this, args);
-        try {
-          const url = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || '';
-          if (/usage|quota|limit|rate|billing|capacity/i.test(url) && response.ok) {
-            const clone = response.clone();
-            const ct = (clone.headers.get('content-type') || '').toLowerCase();
-            if (ct.includes('json')) {
-              clone.json().then((json) => {
-                const data = normalizeUsageJson(json);
-                if (data) applyUsage(data, 'ok');
-              }).catch(() => {});
-            }
-          }
-        } catch (_) {}
-        return response;
-      };
-    } catch (_) {}
-  }
-
-  function normalizeUsageJson(json) {
-    if (!json || typeof json !== 'object') return null;
-    const stack = [json];
-    let used = null, remaining = null;
-    while (stack.length) {
-      const node = stack.pop();
-      if (!node || typeof node !== 'object') continue;
-      for (const [k, v] of Object.entries(node)) {
-        const key = k.toLowerCase();
-        if (typeof v === 'number' && Number.isFinite(v)) {
-          if (/usedpercent|percentused|utilization|usagepercent/.test(key) && v >= 0 && v <= 100) used = v;
-          if (/remainingpercent|percentremaining/.test(key) && v >= 0 && v <= 100) remaining = v;
-        } else if (v && typeof v === 'object') stack.push(v);
-      }
+  P.register({
+    id: 'gemini',
+    initialDelays: [1800, 5000],
+    pollMs: 45000,
+    cacheMaxAgeMs: 12 * 3600000,
+    panelActions: [
+      { key: 'geminiOpenUsage', fallback: 'Open usage page', onClick: () => window.open('https://gemini.google.com/usage', '_blank', 'noopener') }
+    ],
+    noDataMessage: S.t('geminiNoData', null, 'Open gemini.google.com/usage once while signed in — the reading is then shared with your other Gemini tabs.'),
+    init({ scrape }) {
+      if (!onUsagePage()) return;
+      // The usage page renders client-side: re-read when it changes.
+      let timer = null;
+      const mo = new MutationObserver(() => {
+        clearTimeout(timer);
+        timer = setTimeout(scrape, 600);
+      });
+      mo.observe(document.body || document.documentElement, { childList: true, subtree: true });
+      setTimeout(() => mo.disconnect(), 30000);
+    },
+    async scrape(ctx) {
+      const live = extract(document, ctx.selectors, onUsagePage());
+      if (live) return { data: live };
+      const fetched = await viaFetch(ctx.selectors);
+      if (fetched && fetched.auth) return { status: 'signed-out' };
+      if (fetched) return { data: fetched };
+      const hit = ctx.helpers.scanLimitBanner(ctx.selectors);
+      if (hit) return { data: { provider: 'gemini', usedPercent: 100, remainingPercent: 0, windowHint: S.t('limitReached', null, 'Limit reached'), resetHint: hit.text, resetAt: S.parseRelativeReset(hit.text), source: 'dom-limit' } };
+      // On /usage itself a miss means the page layout changed → health check.
+      if (onUsagePage()) return { status: 'no-data', failure: true, detail: 'usage-layout' };
+      return { status: 'no-data', failure: false, detail: 'no-data' };
     }
-    if (remaining == null && used != null) remaining = Math.max(0, 100 - used);
-    if (remaining == null || !Number.isFinite(remaining)) return null;
-    return { provider: 'gemini', usedPercent: used != null ? used : Math.max(0, 100 - remaining), remainingPercent: remaining, windowHint: 'Live', resetHint: '', source: 'network-json' };
-  }
-
-  async function scrape() {
-    console.log('[Zero Grok] Gemini scrape…');
-    let data = scrapeLivePage();
-    if (data && Number.isFinite(data.remainingPercent)) { applyUsage(data, 'ok'); return; }
-    data = await scrapeViaFetch();
-    if (data && data.auth) { applyUsage(null, 'signed-out'); return; }
-    if (data && Number.isFinite(data.remainingPercent)) { applyUsage(data, 'ok'); return; }
-    data = await scrapeViaIframe();
-    if (data && Number.isFinite(data.remainingPercent)) { applyUsage(data, 'ok'); return; }
-    data = scrapeDomLimit();
-    if (data) { applyUsage(data, 'ok'); return; }
-    applyUsage(null, currentUsage ? 'unavailable' : 'no-data');
-  }
-
-  chrome.runtime.onMessage.addListener((msg, _s, sendResponse) => {
-    if (msg.type === 'SCRAPE_USAGE') { scrape().then(() => sendResponse({ ok: true })); return true; }
   });
-
-  loadSettings();
-  installNetworkHook();
-  setTimeout(scrape, 1800);
-  setTimeout(scrape, 5000);
-  setInterval(scrape, 45_000);
-  console.log('[Zero Grok] Gemini ready (live + fetch + iframe + intercept)');
 })();

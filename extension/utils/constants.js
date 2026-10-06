@@ -1,29 +1,21 @@
+import './shared.js';
+
+const S = globalThis.ZeroGrokShared;
+
 export const STORAGE_KEYS = {
   USAGE: 'zeroGrokUsage',
   SETTINGS: 'zeroGrokSettings',
   LAST_ALERT: 'zeroGrokLastAlert',
-  POSITION: 'zeroGrokPosition',
   HISTORY: 'zeroGrokHistory',
-  UPDATE: 'zeroGrokUpdate'
+  UPDATE: 'zeroGrokUpdate',
+  HEALTH: 'zeroGrokHealth',
+  ESTIMATES: 'zeroGrokEstimates',
+  SELECTORS: 'zeroGrokSelectors'
 };
 
-export const DEFAULT_SETTINGS = {
-  canPosition: 'bottom-right',
-  alertThresholds: [70, 90, 100],
-  theme: 'auto',
-  hideCan: false,
-  soundEnabled: true,
-  badgeEnabled: true,
-  badgeMode: 'lowest', // 'lowest' | 'last'
-  pollIntervalMinutes: 5,
-  enableGrok: true,
-  enableClaude: true,
-  enableChatgpt: true,
-  enableGemini: true,
-  estimateMessagesEnabled: false,
-  onboardingComplete: false,
-  autoCheckUpdates: true
-};
+export const DEFAULT_SETTINGS = S.DEFAULT_SETTINGS;
+export const PROVIDERS = S.PROVIDERS;
+export const PROVIDER_BY_ID = S.PROVIDER_BY_ID;
 
 export const PRODUCT_LABELS = {
   2: 'Grok Build',
@@ -36,23 +28,25 @@ export const ALARM_NAMES = {
   POLL: 'zeroGrokPoll',
   RESET: 'zeroGrokReset', // legacy single-name; prefer per-provider
   UPDATE: 'zeroGrokUpdateCheck',
+  SELECTORS: 'zeroGrokSelectorsRefresh',
   resetFor(provider) {
     return 'zeroGrokReset:' + (provider || 'grok');
   }
 };
 
+const RAW_BASE = 'https://raw.githubusercontent.com/guguluP/zero-grok-site/main';
+
 export const UPDATE_FEED = {
-  versionJson: [
-    'https://raw.githubusercontent.com/guguluP/zero-grok-site/main/downloads/version.json',
-    'https://cdn.jsdelivr.net/gh/guguluP/zero-grok-site@main/downloads/version.json'
-  ],
-  manifestJson: [
-    'https://raw.githubusercontent.com/guguluP/zero-grok-site/main/extension/manifest.json'
-  ],
+  versionJson: [RAW_BASE + '/downloads/version.json'],
+  manifestJson: [RAW_BASE + '/extension/manifest.json'],
   zipUrl: 'https://github.com/guguluP/zero-grok-site/raw/main/downloads/zero-grok.zip',
   repoUrl: 'https://github.com/guguluP/zero-grok-site'
 };
 
+/** Data-only selector file (never code). Bundled copy is the fallback. */
+export const SELECTORS_URL = RAW_BASE + '/extension/selectors.json';
+
+/** Tabs the background pings with SCRAPE_USAGE (built-in providers only; optional ones are added when granted). */
 export const ALL_AI_TAB_URLS = [
   'https://grok.com/*',
   'https://grok.x.ai/*',
@@ -62,3 +56,25 @@ export const ALL_AI_TAB_URLS = [
   'https://chat.openai.com/*',
   'https://gemini.google.com/*'
 ];
+
+/** Content-script bundle for each optional provider (registered at runtime once permission is granted). */
+export function optionalScriptFor(id) {
+  const p = PROVIDER_BY_ID[id];
+  if (!p || !p.optional) return null;
+  return [
+    {
+      id: 'zg-hook-' + id,
+      matches: p.hosts,
+      js: ['content/page-hook.js'],
+      runAt: 'document_start',
+      world: 'MAIN'
+    },
+    {
+      id: 'zg-' + id,
+      matches: p.hosts,
+      js: ['utils/shared.js', 'content/can-fx.js', 'content/can-ui.js', 'content/provider-core.js', 'content/' + id + '.js'],
+      css: ['utils/tokens.css', 'content/content.css'],
+      runAt: 'document_idle'
+    }
+  ];
+}

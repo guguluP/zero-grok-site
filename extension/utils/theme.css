@@ -1,0 +1,27 @@
+/*
+ * Page-level aliases for extension pages. All values come from utils/tokens.css
+ * (load it first, and put class="zg-page" on <html>); the same tokens drive the
+ * on-page can and panel, so popup and panel always match.
+ * Follows the OS unless the user picks a theme (data-theme on <html>).
+ */
+:root {
+  color-scheme: light dark;
+  --bg: var(--zg-bg); --card: var(--zg-surface); --text: var(--zg-text); --muted: var(--zg-muted); --line: var(--zg-line);
+  --accent: var(--zg-accent); --accent-text: var(--zg-accent-text); --chip: var(--zg-chip); --track: var(--zg-track);
+  --btn: var(--zg-btn); --btn-text: var(--zg-btn-text); --info: var(--zg-info);
+  /* text colours (AA on cards) */
+  --ok: var(--zg-ok-text); --warn: var(--zg-warn-text); --crit: var(--zg-crit-text);
+  /* fills (bars, dots) */
+  --ok-bar: var(--zg-ok-bar); --warn-bar: var(--zg-warn-bar); --crit-bar: var(--zg-crit-bar);
+}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { transition: none !important; animation: none !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+.conf { display: inline-block; padding: 0 6px; border-radius: 99px; font-size: 10px; font-weight: 600; background: var(--chip); color: var(--muted); }
+.conf-official { background: var(--zg-official-bg); color: var(--zg-official-text); }
+.conf-page { background: var(--zg-page-bg); color: var(--zg-page-text); }
+.conf-estimate { background: var(--zg-estimate-bg); color: var(--zg-estimate-text); }
+button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--zg-focus); outline-offset: 2px;
+}

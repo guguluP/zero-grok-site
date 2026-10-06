@@ -1,0 +1,529 @@
+{
+  "actionTitle": {
+    "message": "Zero Grok – AI usage"
+  },
+  "agoFmt": {
+    "message": "$1 ago"
+  },
+  "badgeLast": {
+    "message": "Last updated AI"
+  },
+  "badgeLowest": {
+    "message": "Lowest remaining (all AIs)"
+  },
+  "badgeOff": {
+    "message": "Nothing (badge off)"
+  },
+  "badgeOnly": {
+    "message": "Only $1"
+  },
+  "canSummary": {
+    "message": "$1: $2% left · $3"
+  },
+  "canSummaryNoData": {
+    "message": "$1: no reading yet"
+  },
+  "changeShortcuts": {
+    "message": "Change shortcuts"
+  },
+  "chartAria": {
+    "message": "$1 daily peak usage, last $2 days"
+  },
+  "chartCaption": {
+    "message": "Avg daily peak $1% used · $2 days with data"
+  },
+  "chatgptNoEndpoint": {
+    "message": "No live meter for this plan — Zero Grok shows a number once ChatGPT displays a limit. Turn on local estimates in Options if you want a rough count."
+  },
+  "chatgptSession": {
+    "message": "Message limit"
+  },
+  "checkNow": {
+    "message": "Check now"
+  },
+  "checking": {
+    "message": "Checking…"
+  },
+  "claudeNoData": {
+    "message": "Could not read usage yet — try Refresh after a chat."
+  },
+  "claudeNoOrg": {
+    "message": "No organization found — open claude.ai once while signed in."
+  },
+  "clearConfirm": {
+    "message": "Delete all locally stored usage history?"
+  },
+  "clearHistory": {
+    "message": "Clear history"
+  },
+  "close": {
+    "message": "Close"
+  },
+  "cmdToggleCan": {
+    "message": "Show or hide the floating can"
+  },
+  "cmdTogglePanel": {
+    "message": "Open the usage panel on the current AI site"
+  },
+  "confEstimate": {
+    "message": "Estimate"
+  },
+  "confOfficial": {
+    "message": "Site usage API"
+  },
+  "confPage": {
+    "message": "Read from page"
+  },
+  "confTooltip": {
+    "message": "Where this number comes from"
+  },
+  "dataHint": {
+    "message": "Usage history (up to 31 days) is stored only on this device."
+  },
+  "estShort": {
+    "message": "est."
+  },
+  "estimateCountOnly": {
+    "message": "No public cap — showing your local message count only."
+  },
+  "estimateNote": {
+    "message": "Local estimate from messages you sent in this browser — not official."
+  },
+  "estimateRough": {
+    "message": "Rough guess: ~$1 msgs on $2 plan. Not official."
+  },
+  "estimateWindow": {
+    "message": "Local count · last $1h"
+  },
+  "exportCsv": {
+    "message": "Export CSV"
+  },
+  "exportJson": {
+    "message": "Export JSON"
+  },
+  "extDescription": {
+    "message": "Floating usage meter for Grok, Claude, ChatGPT, Gemini and more: remaining %, reset countdown, alerts and history. All data stays in your browser.",
+    "description": "Store/manifest description"
+  },
+  "extName": {
+    "message": "Zero Grok",
+    "description": "Extension name"
+  },
+  "forecastEta": {
+    "message": "At this pace you'll hit zero ~$1"
+  },
+  "forecastLasts": {
+    "message": "At this pace it lasts until the reset"
+  },
+  "from": {
+    "message": "From"
+  },
+  "fromPage": {
+    "message": "From page"
+  },
+  "fromSiteApi": {
+    "message": "From site"
+  },
+  "geminiCurrent": {
+    "message": "Current window"
+  },
+  "geminiNoData": {
+    "message": "Open gemini.google.com/usage once while signed in — the reading is then shared with your other Gemini tabs."
+  },
+  "geminiOpenUsage": {
+    "message": "Open usage page"
+  },
+  "genericNoData": {
+    "message": "$1 doesn't publish usage limits. Zero Grok counts the messages you send here (local estimate) and flags limit banners."
+  },
+  "grantNeeded": {
+    "message": "Allow access to $1"
+  },
+  "grokHeuristicNote": {
+    "message": "Decoded from a binary billing response without a documented field — treat as an estimate."
+  },
+  "grokRolling": {
+    "message": "Rolling window"
+  },
+  "grokWeekly": {
+    "message": "Weekly pool"
+  },
+  "grokWeeklyEst": {
+    "message": "Weekly pool (estimated)"
+  },
+  "grokWindow": {
+    "message": "$1h rolling window"
+  },
+  "hiddenSitesEmpty": {
+    "message": "None. Use “Hide on this site” in the can’s panel."
+  },
+  "hiddenSitesTitle": {
+    "message": "Hidden on these sites"
+  },
+  "hideOnSite": {
+    "message": "Hide on this site"
+  },
+  "historyCleared": {
+    "message": "History cleared"
+  },
+  "historyProvider": {
+    "message": "Provider"
+  },
+  "historyRange": {
+    "message": "Range"
+  },
+  "historyTitle": {
+    "message": "History"
+  },
+  "justNow": {
+    "message": "just now"
+  },
+  "leftWord": {
+    "message": "left"
+  },
+  "limitReached": {
+    "message": "Limit reached"
+  },
+  "minimize": {
+    "message": "Minimize"
+  },
+  "nLeft": {
+    "message": "$1 left"
+  },
+  "nOfTotalLeft": {
+    "message": "$1 / $2 left"
+  },
+  "nSent": {
+    "message": "$1 sent"
+  },
+  "needsUpdateLong": {
+    "message": "$1 tracking needs an update — the site changed and Zero Grok can't read usage right now. Numbers are hidden instead of guessing."
+  },
+  "needsUpdateShort": {
+    "message": "$1 tracking needs an update"
+  },
+  "noData": {
+    "message": "no data"
+  },
+  "noDataYet": {
+    "message": "No data yet"
+  },
+  "notifAlertTitle": {
+    "message": "Zero Grok – $1 $2% used"
+  },
+  "notifExhausted": {
+    "message": "$1 usage window exhausted."
+  },
+  "notifResetBody": {
+    "message": "$1 limit has reset. The can is full again."
+  },
+  "notifResetTitle": {
+    "message": "Zero Grok – Refill!"
+  },
+  "notifUsed": {
+    "message": "You've used $2% of your $1 allowance."
+  },
+  "onbF1": {
+    "message": "Live remaining % on a floating soda can, with a reset countdown"
+  },
+  "onbF2": {
+    "message": "Grok, Claude, ChatGPT and Gemini built in — Perplexity, DeepSeek, Le Chat, Copilot and Meta AI optional"
+  },
+  "onbF3": {
+    "message": "Every number is labelled: site usage API, read from page, or estimate"
+  },
+  "onbF4": {
+    "message": "Alerts at your thresholds, quiet hours, and a hint when another AI has room"
+  },
+  "onbF5": {
+    "message": "Everything stays in your browser — no servers, no analytics"
+  },
+  "onbLookTitle": {
+    "message": "2 · Look & feel"
+  },
+  "onbMore": {
+    "message": "More options"
+  },
+  "onbPermSkipped": {
+    "message": "Optional sites were not enabled because access was not granted. You can turn them on later in Options."
+  },
+  "onbPosition": {
+    "message": "Can position"
+  },
+  "onbReduceMotion": {
+    "message": "Reduce motion"
+  },
+  "onbSave": {
+    "message": "Save & get started"
+  },
+  "onbSaved": {
+    "message": "Saved! Open any supported AI site to see your can."
+  },
+  "onbSetupHint": {
+    "message": "Your plan sets sensible defaults (for example, rough caps used only when a site shows no numbers). Optional sites will ask for access."
+  },
+  "onbSetupTitle": {
+    "message": "1 · Pick your AIs and plans"
+  },
+  "onbTagline": {
+    "message": "Watch your AI usage drain like a soda can. Never get rate-limited by surprise."
+  },
+  "onbTip": {
+    "message": "Open a supported site while signed in and the can appears above the message box. Click it for details, drag it to any corner, or press Alt+Shift+U. For Gemini, open gemini.google.com/usage once."
+  },
+  "onbTipTitle": {
+    "message": "Quick tips"
+  },
+  "onbTitle": {
+    "message": "Welcome to Zero Grok"
+  },
+  "onbUpdates": {
+    "message": "I installed the ZIP — tell me when a new version is on GitHub"
+  },
+  "onbWhatTitle": {
+    "message": "What it does"
+  },
+  "optAutoUpdate": {
+    "message": "Check GitHub for new versions every 6 hours (for ZIP / “Load unpacked” installs — store installs update automatically)"
+  },
+  "optBadge": {
+    "message": "Toolbar badge shows"
+  },
+  "optEstimate": {
+    "message": "Local message estimate for Grok / Claude / ChatGPT / Gemini when no live number exists (labelled, not official)"
+  },
+  "optHideCan": {
+    "message": "Hide the floating can everywhere"
+  },
+  "optNotifyReset": {
+    "message": "Notify me when a limit resets"
+  },
+  "optPoll": {
+    "message": "Background refresh every (minutes)"
+  },
+  "optPosition": {
+    "message": "Default can position (when not dragged)"
+  },
+  "optQuiet": {
+    "message": "Quiet hours (no notifications)"
+  },
+  "optReduceMotion": {
+    "message": "Reduce motion (no bubbles or pop animations)"
+  },
+  "optRemoteSelectors": {
+    "message": "Download selector fixes (a small data-only JSON file from GitHub, never code)"
+  },
+  "optSound": {
+    "message": "Can-pop sound on first use and after a refill"
+  },
+  "optSuggest": {
+    "message": "Suggest another AI with room left when one runs low"
+  },
+  "optTheme": {
+    "message": "Theme"
+  },
+  "optThresholds": {
+    "message": "Warn me at these % used (comma-separated)"
+  },
+  "optionalTag": {
+    "message": "asks for site access"
+  },
+  "options": {
+    "message": "Options"
+  },
+  "optionsDesc": {
+    "message": "Everything stays in your browser. Settings sync through your browser profile if sync is on."
+  },
+  "optionsTitle": {
+    "message": "Zero Grok Options"
+  },
+  "panelTitle": {
+    "message": "Zero · $1"
+  },
+  "peakUsed": {
+    "message": "peak $1% used"
+  },
+  "permDenied": {
+    "message": "Access to $1 was not granted."
+  },
+  "planFor": {
+    "message": "$1 plan"
+  },
+  "popupEmpty": {
+    "message": "Open Grok, Claude, ChatGPT or Gemini while signed in — numbers appear after the first read."
+  },
+  "popupSubtitle": {
+    "message": "All AI usage at a glance"
+  },
+  "posBL": {
+    "message": "Bottom left"
+  },
+  "posBR": {
+    "message": "Bottom right"
+  },
+  "posTL": {
+    "message": "Top left"
+  },
+  "posTR": {
+    "message": "Top right"
+  },
+  "positionHint": {
+    "message": "Bottom corners sit above the site's message box. Drag the can anywhere — drop it near a corner to snap. Hover it and press – to shrink it to a dot."
+  },
+  "privacyLink": {
+    "message": "Privacy"
+  },
+  "privacyNote": {
+    "message": "All data stays in your browser. No servers, no analytics."
+  },
+  "providersHint": {
+    "message": "Built-in sites are always allowed. Extra sites ask for permission only when you turn them on."
+  },
+  "refresh": {
+    "message": "Refresh"
+  },
+  "refreshAll": {
+    "message": "Refresh all"
+  },
+  "refreshing": {
+    "message": "Refreshing…"
+  },
+  "remaining": {
+    "message": "remaining"
+  },
+  "reopenSetup": {
+    "message": "Run first-time setup again"
+  },
+  "resetsIn": {
+    "message": "Resets in $1"
+  },
+  "resetsInAt": {
+    "message": "Resets in $1 (at $2)"
+  },
+  "save": {
+    "message": "Save settings"
+  },
+  "saveFailed": {
+    "message": "Could not save"
+  },
+  "savedLocal": {
+    "message": "Saved ✓ (this device)"
+  },
+  "savedSynced": {
+    "message": "Saved ✓ (synced)"
+  },
+  "secAlerts": {
+    "message": "Alerts & badge"
+  },
+  "secAppearance": {
+    "message": "Appearance"
+  },
+  "secData": {
+    "message": "Your data"
+  },
+  "secProviders": {
+    "message": "Providers"
+  },
+  "secShortcuts": {
+    "message": "Keyboard"
+  },
+  "secUpdates": {
+    "message": "Updates"
+  },
+  "shareCard": {
+    "message": "Share card"
+  },
+  "shareFooter": {
+    "message": "Zero Grok · data stays in my browser"
+  },
+  "shareTitle": {
+    "message": "My AI usage today"
+  },
+  "shortcutsHint": {
+    "message": "Alt+Shift+U opens the usage panel. Alt+U shows or hides the can."
+  },
+  "shortcutsManual": {
+    "message": "Open your browser’s extension shortcut settings"
+  },
+  "stale": {
+    "message": "stale"
+  },
+  "statusNoData": {
+    "message": "No reading yet — use the site normally, then Refresh."
+  },
+  "statusSignedOut": {
+    "message": "Sign in to $1, then Refresh."
+  },
+  "suggestLong": {
+    "message": "$1 is at $2% — $3 has $4% left."
+  },
+  "suggestShort": {
+    "message": "$1 has $2% left."
+  },
+  "themeAuto": {
+    "message": "Auto (system)"
+  },
+  "themeDark": {
+    "message": "Dark"
+  },
+  "themeLight": {
+    "message": "Light"
+  },
+  "thresholdsInvalid": {
+    "message": "Use numbers from 1 to 100, e.g. 50, 80, 95"
+  },
+  "to": {
+    "message": "to"
+  },
+  "today": {
+    "message": "Today"
+  },
+  "unhideSite": {
+    "message": "Show the can on $1 again"
+  },
+  "updateAvailable": {
+    "message": "Update available"
+  },
+  "updateAvailableVer": {
+    "message": "Zero Grok $1 is available"
+  },
+  "updateCurrent": {
+    "message": "Installed $1 · up to date (checked $2)"
+  },
+  "updateDownload": {
+    "message": "Download ZIP"
+  },
+  "updateFailed": {
+    "message": "Installed $1 · check failed ($2)"
+  },
+  "updateLater": {
+    "message": "Later"
+  },
+  "updateNever": {
+    "message": "Installed $1 · not checked yet"
+  },
+  "updateNewer": {
+    "message": "Installed $1 · $2 available (checked $3)"
+  },
+  "updatedAgo": {
+    "message": "Updated $1"
+  },
+  "weekly": {
+    "message": "Weekly"
+  },
+  "usageMeterLabel": {
+    "message": "$1 usage meter"
+  },
+  "weeklyShort": {
+    "message": "W $1%"
+  },
+  "expandHint": {
+    "message": "click to expand"
+  },
+  "range7d": {
+    "message": "7d"
+  },
+  "range30d": {
+    "message": "30d"
+  }
+}

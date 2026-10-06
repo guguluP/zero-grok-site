@@ -1,0 +1,529 @@
+{
+  "actionTitle": {
+    "message": "Zero Grok – AI उपयोग"
+  },
+  "agoFmt": {
+    "message": "$1 पहले"
+  },
+  "badgeLast": {
+    "message": "पिछली बार अपडेट हुआ AI"
+  },
+  "badgeLowest": {
+    "message": "सबसे कम बचा हुआ (सभी AI)"
+  },
+  "badgeOff": {
+    "message": "कुछ नहीं (बैज बंद)"
+  },
+  "badgeOnly": {
+    "message": "केवल $1"
+  },
+  "canSummary": {
+    "message": "$1: $2% बचा · $3"
+  },
+  "canSummaryNoData": {
+    "message": "$1: अभी कोई रीडिंग नहीं"
+  },
+  "changeShortcuts": {
+    "message": "शॉर्टकट बदलें"
+  },
+  "chartAria": {
+    "message": "$1 का रोज़ का अधिकतम उपयोग, पिछले $2 दिन"
+  },
+  "chartCaption": {
+    "message": "औसत रोज़ाना अधिकतम $1% उपयोग · $2 दिनों का डेटा"
+  },
+  "chatgptNoEndpoint": {
+    "message": "इस प्लान के लिए कोई लाइव मीटर नहीं है — ChatGPT सीमा दिखाएगा तब Zero Grok संख्या दिखाएगा। अनुमान चाहिए तो Options में लोकल अनुमान चालू करें।"
+  },
+  "chatgptSession": {
+    "message": "संदेश सीमा"
+  },
+  "checkNow": {
+    "message": "अभी जाँचें"
+  },
+  "checking": {
+    "message": "जाँच हो रही है…"
+  },
+  "claudeNoData": {
+    "message": "अभी उपयोग नहीं पढ़ पाए — किसी चैट के बाद Refresh करें।"
+  },
+  "claudeNoOrg": {
+    "message": "कोई संगठन नहीं मिला — साइन इन करके claude.ai एक बार खोलें।"
+  },
+  "clearConfirm": {
+    "message": "इस डिवाइस पर सहेजा गया पूरा उपयोग इतिहास हटाएँ?"
+  },
+  "clearHistory": {
+    "message": "इतिहास मिटाएँ"
+  },
+  "close": {
+    "message": "बंद करें"
+  },
+  "cmdToggleCan": {
+    "message": "तैरता हुआ कैन दिखाएँ या छिपाएँ"
+  },
+  "cmdTogglePanel": {
+    "message": "मौजूदा AI साइट पर उपयोग पैनल खोलें"
+  },
+  "confEstimate": {
+    "message": "अनुमान"
+  },
+  "confOfficial": {
+    "message": "साइट का उपयोग API"
+  },
+  "confPage": {
+    "message": "पेज से पढ़ा गया"
+  },
+  "confTooltip": {
+    "message": "यह संख्या कहाँ से आई"
+  },
+  "dataHint": {
+    "message": "उपयोग इतिहास (31 दिन तक) केवल इसी डिवाइस पर रहता है।"
+  },
+  "estShort": {
+    "message": "अनु."
+  },
+  "estimateCountOnly": {
+    "message": "कोई सार्वजनिक सीमा नहीं — केवल आपके भेजे संदेशों की लोकल गिनती।"
+  },
+  "estimateNote": {
+    "message": "इस ब्राउज़र में भेजे गए संदेशों से लोकल अनुमान — आधिकारिक नहीं।"
+  },
+  "estimateRough": {
+    "message": "मोटा अनुमान: $2 प्लान पर ~$1 संदेश। आधिकारिक नहीं।"
+  },
+  "estimateWindow": {
+    "message": "लोकल गिनती · पिछले $1 घंटे"
+  },
+  "exportCsv": {
+    "message": "CSV निर्यात करें"
+  },
+  "exportJson": {
+    "message": "JSON निर्यात करें"
+  },
+  "extDescription": {
+    "message": "Grok, Claude, ChatGPT, Gemini और अन्य के लिए तैरता उपयोग मीटर: बचा हुआ %, रीसेट काउंटडाउन, अलर्ट और इतिहास। सारा डेटा आपके ब्राउज़र में ही रहता है।",
+    "description": "Store/manifest description"
+  },
+  "extName": {
+    "message": "Zero Grok",
+    "description": "Extension name"
+  },
+  "forecastEta": {
+    "message": "इसी रफ़्तार से ~$1 तक खत्म हो जाएगा"
+  },
+  "forecastLasts": {
+    "message": "इसी रफ़्तार से रीसेट तक चल जाएगा"
+  },
+  "from": {
+    "message": "से"
+  },
+  "fromPage": {
+    "message": "पेज से"
+  },
+  "fromSiteApi": {
+    "message": "साइट से"
+  },
+  "geminiCurrent": {
+    "message": "मौजूदा विंडो"
+  },
+  "geminiNoData": {
+    "message": "साइन इन करके gemini.google.com/usage एक बार खोलें — फिर रीडिंग आपके दूसरे Gemini टैब में भी दिखेगी।"
+  },
+  "geminiOpenUsage": {
+    "message": "उपयोग पेज खोलें"
+  },
+  "genericNoData": {
+    "message": "$1 उपयोग सीमा प्रकाशित नहीं करता। Zero Grok यहाँ भेजे गए आपके संदेश गिनता है (लोकल अनुमान) और सीमा वाले बैनर पहचानता है।"
+  },
+  "grantNeeded": {
+    "message": "$1 तक पहुँच की अनुमति दें"
+  },
+  "grokHeuristicNote": {
+    "message": "बिलिंग के बाइनरी जवाब से बिना दस्तावेज़ी फ़ील्ड के निकाला गया — इसे अनुमान मानें।"
+  },
+  "grokRolling": {
+    "message": "रोलिंग विंडो"
+  },
+  "grokWeekly": {
+    "message": "साप्ताहिक पूल"
+  },
+  "grokWeeklyEst": {
+    "message": "साप्ताहिक पूल (अनुमानित)"
+  },
+  "grokWindow": {
+    "message": "$1 घंटे की रोलिंग विंडो"
+  },
+  "hiddenSitesEmpty": {
+    "message": "कोई नहीं। कैन के पैनल में “इस साइट पर छिपाएँ” इस्तेमाल करें।"
+  },
+  "hiddenSitesTitle": {
+    "message": "इन साइटों पर छिपा है"
+  },
+  "hideOnSite": {
+    "message": "इस साइट पर छिपाएँ"
+  },
+  "historyCleared": {
+    "message": "इतिहास मिटा दिया गया"
+  },
+  "historyProvider": {
+    "message": "प्रदाता"
+  },
+  "historyRange": {
+    "message": "अवधि"
+  },
+  "historyTitle": {
+    "message": "इतिहास"
+  },
+  "justNow": {
+    "message": "अभी"
+  },
+  "leftWord": {
+    "message": "बचा"
+  },
+  "limitReached": {
+    "message": "सीमा पूरी हुई"
+  },
+  "minimize": {
+    "message": "छोटा करें"
+  },
+  "nLeft": {
+    "message": "$1 बचे"
+  },
+  "nOfTotalLeft": {
+    "message": "$2 में से $1 बचे"
+  },
+  "nSent": {
+    "message": "$1 भेजे"
+  },
+  "needsUpdateLong": {
+    "message": "$1 ट्रैकिंग को अपडेट चाहिए — साइट बदल गई है और Zero Grok अभी उपयोग नहीं पढ़ पा रहा। अंदाज़ा लगाने के बजाय संख्या छिपा दी गई है।"
+  },
+  "needsUpdateShort": {
+    "message": "$1 ट्रैकिंग को अपडेट चाहिए"
+  },
+  "noData": {
+    "message": "डेटा नहीं"
+  },
+  "noDataYet": {
+    "message": "अभी कोई डेटा नहीं"
+  },
+  "notifAlertTitle": {
+    "message": "Zero Grok – $1 $2% उपयोग"
+  },
+  "notifExhausted": {
+    "message": "$1 की उपयोग विंडो खत्म हो गई।"
+  },
+  "notifResetBody": {
+    "message": "$1 की सीमा रीसेट हो गई। कैन फिर से भरा है।"
+  },
+  "notifResetTitle": {
+    "message": "Zero Grok – रीफ़िल!"
+  },
+  "notifUsed": {
+    "message": "आपने अपने $1 कोटे का $2% उपयोग कर लिया है।"
+  },
+  "onbF1": {
+    "message": "तैरते सोडा कैन पर लाइव बचा हुआ %, रीसेट काउंटडाउन के साथ"
+  },
+  "onbF2": {
+    "message": "Grok, Claude, ChatGPT और Gemini पहले से — Perplexity, DeepSeek, Le Chat, Copilot और Meta AI वैकल्पिक"
+  },
+  "onbF3": {
+    "message": "हर संख्या पर लेबल: साइट का उपयोग API, पेज से पढ़ा गया, या अनुमान"
+  },
+  "onbF4": {
+    "message": "आपकी सीमा पर अलर्ट, शांत समय, और जब दूसरे AI में जगह हो तो सुझाव"
+  },
+  "onbF5": {
+    "message": "सब कुछ आपके ब्राउज़र में — कोई सर्वर नहीं, कोई एनालिटिक्स नहीं"
+  },
+  "onbLookTitle": {
+    "message": "2 · रूप और अनुभव"
+  },
+  "onbMore": {
+    "message": "और विकल्प"
+  },
+  "onbPermSkipped": {
+    "message": "पहुँच की अनुमति नहीं मिली, इसलिए वैकल्पिक साइटें चालू नहीं हुईं। आप इन्हें बाद में Options से चालू कर सकते हैं।"
+  },
+  "onbPosition": {
+    "message": "कैन की जगह"
+  },
+  "onbReduceMotion": {
+    "message": "कम एनिमेशन"
+  },
+  "onbSave": {
+    "message": "सहेजें और शुरू करें"
+  },
+  "onbSaved": {
+    "message": "सहेज लिया! अपना कैन देखने के लिए कोई भी समर्थित AI साइट खोलें।"
+  },
+  "onbSetupHint": {
+    "message": "आपका प्लान सही डिफ़ॉल्ट तय करता है (जैसे मोटी सीमाएँ, जो केवल तब काम आती हैं जब साइट कोई संख्या नहीं दिखाती)। वैकल्पिक साइटें पहुँच की अनुमति माँगेंगी।"
+  },
+  "onbSetupTitle": {
+    "message": "1 · अपने AI और प्लान चुनें"
+  },
+  "onbTagline": {
+    "message": "अपने AI उपयोग को सोडा कैन की तरह खाली होते देखें। अचानक रेट-लिमिट से बचें।"
+  },
+  "onbTip": {
+    "message": "साइन इन करके कोई समर्थित साइट खोलें, कैन संदेश बॉक्स के ऊपर दिख जाएगा। विवरण के लिए उस पर क्लिक करें, किसी भी कोने में खींचें, या Alt+Shift+U दबाएँ। Gemini के लिए gemini.google.com/usage एक बार खोलें।"
+  },
+  "onbTipTitle": {
+    "message": "छोटे सुझाव"
+  },
+  "onbTitle": {
+    "message": "Zero Grok में आपका स्वागत है"
+  },
+  "onbUpdates": {
+    "message": "मैंने ZIP इंस्टॉल किया है — GitHub पर नया वर्ज़न आने पर बताएँ"
+  },
+  "onbWhatTitle": {
+    "message": "यह क्या करता है"
+  },
+  "optAutoUpdate": {
+    "message": "हर 6 घंटे में GitHub पर नए वर्ज़न जाँचें (ZIP / “Load unpacked” इंस्टॉल के लिए — स्टोर वाले इंस्टॉल अपने-आप अपडेट होते हैं)"
+  },
+  "optBadge": {
+    "message": "टूलबार बैज में दिखाएँ"
+  },
+  "optEstimate": {
+    "message": "जब कोई लाइव संख्या न हो तो Grok / Claude / ChatGPT / Gemini के लिए लोकल संदेश अनुमान (लेबल के साथ, आधिकारिक नहीं)"
+  },
+  "optHideCan": {
+    "message": "तैरता कैन हर जगह छिपाएँ"
+  },
+  "optNotifyReset": {
+    "message": "सीमा रीसेट होने पर सूचना दें"
+  },
+  "optPoll": {
+    "message": "बैकग्राउंड रीफ़्रेश हर (मिनट)"
+  },
+  "optPosition": {
+    "message": "कैन की डिफ़ॉल्ट जगह (जब खींचा न गया हो)"
+  },
+  "optQuiet": {
+    "message": "शांत समय (कोई सूचना नहीं)"
+  },
+  "optReduceMotion": {
+    "message": "कम एनिमेशन (बुलबुले या पॉप एनिमेशन नहीं)"
+  },
+  "optRemoteSelectors": {
+    "message": "सेलेक्टर सुधार डाउनलोड करें (GitHub से एक छोटी डेटा-JSON फ़ाइल, कभी कोड नहीं)"
+  },
+  "optSound": {
+    "message": "पहली बार और रीफ़िल के बाद कैन-पॉप आवाज़"
+  },
+  "optSuggest": {
+    "message": "जब एक AI कम हो तो जगह वाले दूसरे AI का सुझाव दें"
+  },
+  "optTheme": {
+    "message": "थीम"
+  },
+  "optThresholds": {
+    "message": "इतने % उपयोग पर चेतावनी दें (कॉमा से अलग)"
+  },
+  "optionalTag": {
+    "message": "साइट पहुँच माँगता है"
+  },
+  "options": {
+    "message": "विकल्प"
+  },
+  "optionsDesc": {
+    "message": "सब कुछ आपके ब्राउज़र में रहता है। सिंक चालू हो तो सेटिंग आपकी ब्राउज़र प्रोफ़ाइल से सिंक होती हैं।"
+  },
+  "optionsTitle": {
+    "message": "Zero Grok विकल्प"
+  },
+  "panelTitle": {
+    "message": "Zero · $1"
+  },
+  "peakUsed": {
+    "message": "अधिकतम $1% उपयोग"
+  },
+  "permDenied": {
+    "message": "$1 तक पहुँच की अनुमति नहीं मिली।"
+  },
+  "planFor": {
+    "message": "$1 प्लान"
+  },
+  "popupEmpty": {
+    "message": "साइन इन करके Grok, Claude, ChatGPT या Gemini खोलें — पहली रीडिंग के बाद संख्या दिखेगी।"
+  },
+  "popupSubtitle": {
+    "message": "सारे AI का उपयोग एक नज़र में"
+  },
+  "posBL": {
+    "message": "नीचे बाएँ"
+  },
+  "posBR": {
+    "message": "नीचे दाएँ"
+  },
+  "posTL": {
+    "message": "ऊपर बाएँ"
+  },
+  "posTR": {
+    "message": "ऊपर दाएँ"
+  },
+  "positionHint": {
+    "message": "नीचे वाले कोनों में कैन साइट के संदेश बॉक्स के ऊपर रहता है। कैन को कहीं भी खींचें — कोने के पास छोड़ें तो वह वहीं जम जाएगा। उस पर माउस ले जाकर – दबाएँ तो वह एक बिंदु बन जाएगा।"
+  },
+  "privacyLink": {
+    "message": "गोपनीयता"
+  },
+  "privacyNote": {
+    "message": "सारा डेटा आपके ब्राउज़र में रहता है। कोई सर्वर नहीं, कोई एनालिटिक्स नहीं।"
+  },
+  "providersHint": {
+    "message": "पहले से शामिल साइटों की अनुमति हमेशा रहती है। अतिरिक्त साइटें चालू करने पर ही अनुमति माँगती हैं।"
+  },
+  "refresh": {
+    "message": "रीफ़्रेश"
+  },
+  "refreshAll": {
+    "message": "सब रीफ़्रेश करें"
+  },
+  "refreshing": {
+    "message": "रीफ़्रेश हो रहा है…"
+  },
+  "remaining": {
+    "message": "बचा हुआ"
+  },
+  "reopenSetup": {
+    "message": "पहली बार वाला सेटअप फिर से चलाएँ"
+  },
+  "resetsIn": {
+    "message": "$1 में रीसेट"
+  },
+  "resetsInAt": {
+    "message": "$1 में रीसेट ($2 बजे)"
+  },
+  "save": {
+    "message": "सेटिंग सहेजें"
+  },
+  "saveFailed": {
+    "message": "सहेजा नहीं जा सका"
+  },
+  "savedLocal": {
+    "message": "सहेजा गया ✓ (यह डिवाइस)"
+  },
+  "savedSynced": {
+    "message": "सहेजा गया ✓ (सिंक हुआ)"
+  },
+  "secAlerts": {
+    "message": "अलर्ट और बैज"
+  },
+  "secAppearance": {
+    "message": "रूप"
+  },
+  "secData": {
+    "message": "आपका डेटा"
+  },
+  "secProviders": {
+    "message": "प्रदाता"
+  },
+  "secShortcuts": {
+    "message": "कीबोर्ड"
+  },
+  "secUpdates": {
+    "message": "अपडेट"
+  },
+  "shareCard": {
+    "message": "शेयर कार्ड"
+  },
+  "shareFooter": {
+    "message": "Zero Grok · डेटा मेरे ब्राउज़र में ही रहता है"
+  },
+  "shareTitle": {
+    "message": "आज मेरा AI उपयोग"
+  },
+  "shortcutsHint": {
+    "message": "Alt+Shift+U उपयोग पैनल खोलता है। Alt+U कैन दिखाता या छिपाता है।"
+  },
+  "shortcutsManual": {
+    "message": "अपने ब्राउज़र की एक्सटेंशन शॉर्टकट सेटिंग खोलें"
+  },
+  "stale": {
+    "message": "पुराना"
+  },
+  "statusNoData": {
+    "message": "अभी कोई रीडिंग नहीं — साइट को सामान्य रूप से इस्तेमाल करें, फिर Refresh करें।"
+  },
+  "statusSignedOut": {
+    "message": "$1 में साइन इन करें, फिर Refresh करें।"
+  },
+  "suggestLong": {
+    "message": "$1 $2% पर है — $3 में $4% बचा है।"
+  },
+  "suggestShort": {
+    "message": "$1 में $2% बचा है।"
+  },
+  "themeAuto": {
+    "message": "ऑटो (सिस्टम)"
+  },
+  "themeDark": {
+    "message": "डार्क"
+  },
+  "themeLight": {
+    "message": "लाइट"
+  },
+  "thresholdsInvalid": {
+    "message": "1 से 100 तक की संख्याएँ लिखें, जैसे 50, 80, 95"
+  },
+  "to": {
+    "message": "तक"
+  },
+  "today": {
+    "message": "आज"
+  },
+  "unhideSite": {
+    "message": "$1 पर कैन फिर से दिखाएँ"
+  },
+  "updateAvailable": {
+    "message": "अपडेट उपलब्ध है"
+  },
+  "updateAvailableVer": {
+    "message": "Zero Grok $1 उपलब्ध है"
+  },
+  "updateCurrent": {
+    "message": "इंस्टॉल $1 · नवीनतम (जाँचा $2)"
+  },
+  "updateDownload": {
+    "message": "ZIP डाउनलोड करें"
+  },
+  "updateFailed": {
+    "message": "इंस्टॉल $1 · जाँच विफल ($2)"
+  },
+  "updateLater": {
+    "message": "बाद में"
+  },
+  "updateNever": {
+    "message": "इंस्टॉल $1 · अभी जाँचा नहीं"
+  },
+  "updateNewer": {
+    "message": "इंस्टॉल $1 · $2 उपलब्ध (जाँचा $3)"
+  },
+  "updatedAgo": {
+    "message": "अपडेट: $1"
+  },
+  "weekly": {
+    "message": "साप्ताहिक"
+  },
+  "usageMeterLabel": {
+    "message": "$1 उपयोग मीटर"
+  },
+  "weeklyShort": {
+    "message": "सप्ता. $1%"
+  },
+  "expandHint": {
+    "message": "बड़ा करने के लिए क्लिक करें"
+  },
+  "range7d": {
+    "message": "7 दिन"
+  },
+  "range30d": {
+    "message": "30 दिन"
+  }
+}
