@@ -28,7 +28,7 @@
 - **Alerts**: custom thresholds, quiet hours, a suggestion to switch provider when one runs low, and badge modes (lowest, last updated, a specific AI, off).
 - **First-run setup**: pick providers and plans, position, theme, sound and updates.
 - **Can controls**: the can is draggable with corner snapping, can be minimized to a dot, and can be hidden on a single site.
-- **Shortcuts**: `Alt+Shift+Z` toggles the usage panel; `Alt+U` shows or hides the can. The background now handles these shortcuts.
+- **Shortcuts**: `Alt+Shift+U` toggles the usage panel; `Alt+U` shows or hides the can. The background now handles these shortcuts. (`Alt+Shift+Z` was planned, but Chromium silently refuses to assign it, as found by the e2e suite.)
 - **Appearance**: light, dark and auto themes, and a reduce-motion option.
 - **Languages**: i18n via `_locales`, with English and Hindi.
 - **Optional providers** via `optional_host_permissions`: Perplexity, DeepSeek, Le Chat (Mistral), Microsoft Copilot and Meta AI.

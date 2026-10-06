@@ -6,8 +6,10 @@
   "type": "module",
   "scripts": {
     "lint": "web-ext lint --source-dir ../extension",
+    "lint:firefox": "node lint-firefox.mjs",
     "test:unit": "node --test unit.test.mjs",
     "test:e2e": "node e2e.mjs",
+    "test:keys": "node shortcuts-x11.mjs",
     "test": "npm run test:unit && npm run test:e2e",
     "assets": "python3 ../tools/gen_assets.py"
   },

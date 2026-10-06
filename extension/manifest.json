@@ -170,7 +170,7 @@
   "commands": {
     "toggle-panel": {
       "suggested_key": {
-        "default": "Alt+Shift+Z"
+        "default": "Alt+Shift+U"
       },
       "description": "__MSG_cmdTogglePanel__"
     },

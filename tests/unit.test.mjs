@@ -123,16 +123,18 @@ test('reset parsing and duration formatting', () => {
 test('suggestSwitch picks a fresh provider with room', () => {
   const now = Date.now();
   const by = {
-    claude: { remainingPercent: 10, updatedAt: now },
-    gemini: { remainingPercent: 65, updatedAt: now },
-    chatgpt: { remainingPercent: 90, updatedAt: now - 13 * HOUR }, // stale
-    grok: { remainingPercent: 25, updatedAt: now }                 // too low
+    claude: { remainingPercent: 10, updatedAt: now, source: 'org-usage' },
+    gemini: { remainingPercent: 65, updatedAt: now, source: 'usage-page' },
+    chatgpt: { remainingPercent: 90, updatedAt: now - 13 * HOUR, source: 'api-limit' }, // stale
+    grok: { remainingPercent: 25, updatedAt: now, source: 'rate-limits' } // too low
   };
   const sg = S.suggestSwitch(by, S.DEFAULT_SETTINGS, 'claude', now);
   assert.equal(sg.to, 'gemini');
   assert.equal(sg.fromRemaining, 10);
   assert.equal(S.suggestSwitch(by, { ...S.DEFAULT_SETTINGS, enableGemini: false }, 'claude', now), null);
   assert.equal(S.suggestSwitch(by, S.DEFAULT_SETTINGS, 'gemini', now), null);
+  const withEstimate = { ...by, perplexity: { remainingPercent: 95, updatedAt: now, source: 'estimate' } };
+  assert.equal(S.suggestSwitch(withEstimate, { ...S.DEFAULT_SETTINGS, enablePerplexity: true }, 'claude', now).to, 'gemini', 'estimates are never suggested');
 });
 
 test('dailyPeaks and CSV export', () => {
@@ -197,7 +199,7 @@ test('manifest: v1.5.0, trimmed permissions, scoped hosts, Firefox fields', () =
   assert.ok(parseFloat(m.browser_specific_settings.gecko.strict_min_version) >= 113);
   assert.deepEqual(m.browser_specific_settings.gecko.data_collection_permissions, { required: ['none'] });
   assert.ok(m.web_accessible_resources.some((w) => w.resources.includes('assets/sounds/*')));
-  assert.equal(m.commands['toggle-panel'].suggested_key.default, 'Alt+Shift+Z');
+  assert.equal(m.commands['toggle-panel'].suggested_key.default, 'Alt+Shift+U');
   for (const cs of m.content_scripts) for (const f of [...(cs.js || []), ...(cs.css || [])]) assert.ok(fs.existsSync(path.join(EXT, f)), f);
   for (const p of S.PROVIDERS.filter((x) => x.optional)) assert.ok(fs.existsSync(path.join(EXT, 'content', p.id + '.js')), p.id);
 });

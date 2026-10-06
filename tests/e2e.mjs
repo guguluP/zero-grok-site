@@ -16,6 +16,8 @@ const ART = path.resolve(process.env.ARTIFACTS || path.join(HERE, 'artifacts'));
 fs.mkdirSync(ART, { recursive: true });
 
 const results = [];
+let AREA = 'General';
+const area = (a) => { AREA = a; console.log(`\n== ${a}`); };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function waitFor(fn, { timeout = 10000, interval = 150, msg = 'condition' } = {}) {
   const end = Date.now() + timeout;
@@ -30,10 +32,10 @@ async function check(name, fn) {
   const t0 = Date.now();
   try {
     const detail = await fn();
-    results.push({ name, pass: true });
+    results.push({ area: AREA, name, pass: true });
     console.log(`PASS  ${name}${detail ? ' — ' + detail : ''} (${Date.now() - t0}ms)`);
   } catch (e) {
-    results.push({ name, pass: false, detail: e.message });
+    results.push({ area: AREA, name, pass: false, detail: e.message });
     console.log(`FAIL  ${name} — ${e.message}`);
   }
 }
@@ -126,6 +128,8 @@ async function handleRoute(route) {
   // ---- optional providers
   if (host === 'www.perplexity.ai') return html(route, page('Perplexity', '<div class="remaining-searches">12 Pro searches left today</div>'));
   if (host === 'chat.deepseek.com') return html(route, page('DeepSeek', '<div role="alert">You have reached your daily message limit. Try again in 2 hours.</div>'));
+  if (host === 'chat.mistral.ai') return html(route, page('Le Chat', '<div class="remaining-messages">5 messages left</div>'));
+  if (host === 'www.meta.ai') return html(route, page('Meta AI', '<div role="status">You\'ve reached your daily limit. Come back tomorrow.</div>'));
   if (host === 'copilot.microsoft.com') return html(route, page('Copilot', '<p>Hi there.</p>'));
   return route.fulfill({ status: 404, body: 'not mocked' });
 }
@@ -142,14 +146,19 @@ async function launch(extDir, label, opts = {}) {
     env: opts.locale ? { ...process.env, LANGUAGE: opts.locale.split('-')[0], LANG: opts.locale.replace('-', '_') + '.UTF-8' } : undefined,
     args: [`--disable-extensions-except=${extDir}`, `--load-extension=${extDir}`, '--no-first-run', ...(opts.locale ? ['--lang=' + opts.locale] : [])]
   });
-  await ctx.route(/^https:\/\/(grok\.com|claude\.ai|chatgpt\.com|gemini\.google\.com|www\.perplexity\.ai|chat\.deepseek\.com|copilot\.microsoft\.com)\//, handleRoute);
+  await ctx.route(/^https:\/\/(grok\.com|claude\.ai|chatgpt\.com|gemini\.google\.com|www\.perplexity\.ai|chat\.deepseek\.com|copilot\.microsoft\.com|chat\.mistral\.ai|www\.meta\.ai)\//, handleRoute);
   let sw = ctx.serviceWorkers()[0];
   if (!sw) sw = await ctx.waitForEvent('serviceworker', { timeout: 20000 });
   const id = new URL(sw.url()).host;
   // The onboarding tab opens on install: close it so it doesn't steal focus.
-  await sleep(800);
+  let onboardingOpened = false;
+  for (let i = 0; i < 30 && !onboardingOpened; i++) {
+    onboardingOpened = ctx.pages().some((p) => p.url().includes('/onboarding/onboarding.html'));
+    if (!onboardingOpened) await sleep(100);
+  }
+  await sleep(300);
   for (const p of ctx.pages()) if (p.url().includes('/onboarding/')) await p.close();
-  return { ctx, sw, id, base: `chrome-extension://${id}` };
+  return { ctx, sw, id, base: `chrome-extension://${id}`, onboardingOpened };
 }
 
 const errorsOf = (pg) => {
@@ -183,6 +192,7 @@ async function site(env, url) {
 const env = await launch(EXT_SRC, 'main');
 let ext; // extension page used to drive messages/storage
 
+area('Install & core');
 await check('service worker starts (MV3 module worker)', async () => {
   assert(env.sw.url().endsWith('/background.js'), env.sw.url());
   ext = await extPage(env, '/popup/popup.html');
@@ -197,6 +207,7 @@ await check('settings live in chrome.storage.sync after install', async () => {
   assert(s.estimateMessagesEnabled === false);
 });
 
+area('Updates');
 await check('no update alarm unless opted in; 6h alarm after opting in', async () => {
   const none = await ext.evaluate(() => chrome.alarms.get('zeroGrokUpdateCheck'));
   assert(!none, 'alarm exists before opt-in');
@@ -207,6 +218,7 @@ await check('no update alarm unless opted in; 6h alarm after opting in', async (
   await waitFor(async () => !(await ext.evaluate(() => chrome.alarms.get('zeroGrokUpdateCheck'))), { msg: 'alarm cleared' });
 });
 
+area('Settings merge');
 await check('SAVE_SETTINGS merges partial updates (no lost keys)', async () => {
   await send(ext, { type: 'SAVE_SETTINGS', payload: { pollIntervalMinutes: 3, plans: { claude: 'pro' } } });
   await send(ext, { type: 'SAVE_SETTINGS', payload: { theme: 'dark' } });
@@ -215,6 +227,7 @@ await check('SAVE_SETTINGS merges partial updates (no lost keys)', async () => {
   await send(ext, { type: 'SAVE_SETTINGS', payload: { theme: 'auto', pollIntervalMinutes: 5 } });
 });
 
+area('Install & core');
 await check('icons + can-pop.wav load from the extension; wav is web-accessible on provider pages', async () => {
   for (const s of [16, 32, 48, 128]) {
     const sig = await ext.evaluate(async (u) => { const b = new Uint8Array(await (await fetch(u)).arrayBuffer()); return Array.from(b.slice(0, 4)).map((x) => x.toString(16).padStart(2, '0')).join(''); }, `/assets/icons/icon${s}.png`);
@@ -228,6 +241,7 @@ await check('icons + can-pop.wav load from the extension; wav is web-accessible 
 });
 
 // ---- Grok
+area('Grok');
 let grok;
 await check('Grok: can mounts and shows official rate-limit % with per-model breakdown', async () => {
   grok = await env.ctx.newPage();
@@ -270,6 +284,7 @@ await check('Grok: page-world hook forwards the page\'s own rate-limit responses
   mock.grokLive = null;
 });
 
+area('Can UX: SPA remount / drag / snap / minimize / hide');
 await check('SPA: can re-mounts after the app wipes <body> and after pushState navigation', async () => {
   await grok.evaluate(() => { document.body.innerHTML = '<main><h1>new route</h1></main>'; });
   await grok.waitForSelector(canSel('grok'), { timeout: 3000 });
@@ -313,7 +328,8 @@ await check('Minimize to dot and restore', async () => {
   assert((await grok.locator('#zero-grok-panel-grok.zg-open').count()) === 0, 'restore click must not open panel');
 });
 
-await check('Keyboard: TOGGLE_PANEL (Alt+Shift+Z command) and Enter on the focused can open the panel', async () => {
+area('Shortcuts');
+await check('Keyboard: TOGGLE_PANEL (Alt+Shift+U command) and Enter on the focused can open the panel', async () => {
   await grok.bringToFront();
   await env.sw.evaluate(async () => {
     const tabs = await chrome.tabs.query({ url: 'https://grok.com/*' });
@@ -327,6 +343,25 @@ await check('Keyboard: TOGGLE_PANEL (Alt+Shift+Z command) and Enter on the focus
   await grok.keyboard.press('Escape');
 });
 
+await check('Shortcuts registered: Alt+Shift+U (panel), Alt+U (can); TOGGLE_CAN hides/shows the can', async () => {
+  const cmds = await ext.evaluate(() => chrome.commands.getAll());
+  const panel = cmds.find((c) => c.name === 'toggle-panel');
+  const can = cmds.find((c) => c.name === 'toggle-can');
+  assert(panel && /Alt\+Shift\+U/.test(panel.shortcut), 'toggle-panel ' + JSON.stringify(panel));
+  assert(can && /Alt\+U/.test(can.shortcut), 'toggle-can ' + JSON.stringify(can));
+  assert(panel.description === 'Open the usage panel on the current AI site', panel.description);
+  const toggle = () => env.sw.evaluate(async () => {
+    const tabs = await chrome.tabs.query({ url: 'https://grok.com/*' });
+    await chrome.tabs.sendMessage(tabs[0].id, { type: 'TOGGLE_CAN' });
+  });
+  await toggle();
+  await waitFor(async () => !(await grok.locator(canSel('grok')).isVisible()), { msg: 'can hidden' });
+  await toggle();
+  await waitFor(async () => grok.locator(canSel('grok')).isVisible(), { msg: 'can visible' });
+  return panel.shortcut + ' / ' + can.shortcut;
+});
+
+area('Can UX: SPA remount / drag / snap / minimize / hide');
 await check('Hide on this site removes the can and is saved in settings', async () => {
   await grok.click(canSel('grok') + ' .zg-percent');
   await grok.locator('#zero-grok-panel-grok.zg-open button.zg-btn', { hasText: 'Hide on this site' }).click();
@@ -337,6 +372,7 @@ await check('Hide on this site removes the can and is saved in settings', async 
   await waitFor(async () => grok.locator(canSel('grok')).isVisible(), { msg: 'shown again via storage change' });
 });
 
+area('Grok');
 await check('Grok paid: explicit JSON usage → official weekly %', async () => {
   mock.grok = 'paid-json';
   await grok.reload();
@@ -357,6 +393,7 @@ await check('Grok paid: protobuf fallback is labelled Estimate', async () => {
   assert(/treat as an estimate/.test(await p.locator('.zg-status').textContent()));
 });
 
+area('Health check / failure paths');
 await check('Health check: repeated failures show "tracking needs an update" instead of a number', async () => {
   mock.grok = 'broken';
   await grok.reload();
@@ -391,6 +428,7 @@ await check('Grok signed out → sign-in hint, no fake number', async () => {
   await grok.close();
 });
 
+area('Claude');
 // ---- Claude
 await check('Claude: org usage API → official %, weekly + 5-hour breakdown', async () => {
   const pg = await env.ctx.newPage();
@@ -408,6 +446,7 @@ await check('Claude: org usage API → official %, weekly + 5-hour breakdown', a
   await pg.close();
 });
 
+area('ChatGPT');
 // ---- ChatGPT
 await check('ChatGPT: on-page usage meter → "Read from page"', async () => {
   mock.chatgptDom = 'meter';
@@ -445,6 +484,7 @@ await check('ChatGPT: limit banner → 0% with reset countdown', async () => {
   await pg.close();
 });
 
+area('Local estimates');
 await check('Local estimate (opt-in): counting sent messages, clearly labelled', async () => {
   mock.chatgptDom = 'none';
   await send(ext, { type: 'SAVE_SETTINGS', payload: { estimateMessagesEnabled: true, plans: { chatgpt: 'free' } } });
@@ -465,6 +505,7 @@ await check('Local estimate (opt-in): counting sent messages, clearly labelled',
   await pg.close();
 });
 
+area('Gemini');
 // ---- Gemini (Trusted Types enforced)
 await check('Gemini /usage under Trusted Types: mounts without errors, reads current + weekly', async () => {
   const pg = await env.ctx.newPage();
@@ -495,6 +536,111 @@ await check('Gemini chat page: percentages in the conversation are ignored; cach
   await pg.close();
 });
 
+
+area('Alerts / quiet hours / badge');
+async function spyNotifications() {
+  await env.sw.evaluate(() => {
+    globalThis.__zgNotes = [];
+    if (!globalThis.__zgSpy) {
+      const orig = chrome.notifications.create.bind(chrome.notifications);
+      chrome.notifications.create = (id, opts, cb) => { globalThis.__zgNotes.push({ id, ...opts }); return orig(id, opts, cb || (() => {})); };
+      globalThis.__zgSpy = true;
+    }
+  });
+}
+const notes = () => env.sw.evaluate(() => globalThis.__zgNotes || []);
+const quietAroundNow = () => env.sw.evaluate(() => {
+  const f = (d) => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  return { quietHoursEnabled: true, quietStart: f(new Date(Date.now() - 3600000)), quietEnd: f(new Date(Date.now() + 3600000)) };
+});
+
+await check('Threshold alert fires once at the highest crossed level (custom thresholds, deduped, with switch suggestion)', async () => {
+  await spyNotifications();
+  await send(ext, { type: 'SAVE_SETTINGS', payload: { alertThresholds: [60, 90], quietHoursEnabled: false, suggestSwitch: true } });
+  await store(ext, { zeroGrokLastAlert: {} });
+  await send(ext, { type: 'USAGE_DATA', payload: { provider: 'gemini', usedPercent: 20, remainingPercent: 80, source: 'usage-page' } });
+  await send(ext, { type: 'USAGE_DATA', payload: { provider: 'claude', usedPercent: 92, remainingPercent: 8, source: 'org-usage' } });
+  const n = await waitFor(async () => (await notes()).find((x) => x.id === 'zero-grok-alert-claude:90'), { msg: 'claude:90 notification' });
+  assert(/used 92% of your Claude allowance/.test(n.message), n.message);
+  assert(/Gemini has 80% left/.test(n.message), 'switch suggestion in alert: ' + n.message);
+  await send(ext, { type: 'USAGE_DATA', payload: { provider: 'claude', usedPercent: 94, remainingPercent: 6, source: 'org-usage' } });
+  await sleep(300);
+  assert((await notes()).filter((x) => x.id.startsWith('zero-grok-alert-claude')).length === 1, 'dedupe failed');
+  return n.title;
+});
+
+await check('Quiet hours suppress threshold alerts; estimates never alert', async () => {
+  await spyNotifications();
+  await send(ext, { type: 'SAVE_SETTINGS', payload: await quietAroundNow() });
+  await send(ext, { type: 'USAGE_DATA', payload: { provider: 'grok', usedPercent: 95, remainingPercent: 5, source: 'rate-limits' } });
+  await sleep(400);
+  assert(!(await notes()).length, 'notified during quiet hours: ' + JSON.stringify(await notes()));
+  const last = await getLocal(ext, 'zeroGrokLastAlert');
+  assert(last['grok:90'], 'quiet alert should still be recorded (no burst afterwards)');
+  await send(ext, { type: 'SAVE_SETTINGS', payload: { quietHoursEnabled: false } });
+  await send(ext, { type: 'USAGE_DATA', payload: { provider: 'chatgpt', usedPercent: 99, remainingPercent: 1, count: 40, source: 'estimate' } });
+  await sleep(400);
+  assert(!(await notes()).some((x) => x.id.includes('chatgpt')), 'estimate triggered an alert');
+});
+
+await check('Limit-reset notification (per-provider alarm), muted in quiet hours and when turned off', async () => {
+  await spyNotifications();
+  await send(ext, { type: 'SAVE_SETTINGS', payload: await quietAroundNow() });
+  await env.sw.evaluate(() => chrome.alarms.create('zeroGrokReset:claude', { when: Date.now() + 300 }));
+  await sleep(2000);
+  assert(!(await notes()).some((x) => x.id === 'zero-grok-reset-claude'), 'reset notified in quiet hours');
+  await send(ext, { type: 'SAVE_SETTINGS', payload: { quietHoursEnabled: false, notifyOnReset: false } });
+  await env.sw.evaluate(() => chrome.alarms.create('zeroGrokReset:claude', { when: Date.now() + 300 }));
+  await sleep(2000);
+  assert(!(await notes()).some((x) => x.id === 'zero-grok-reset-claude'), 'reset notified while turned off');
+  await send(ext, { type: 'SAVE_SETTINGS', payload: { notifyOnReset: true } });
+  await env.sw.evaluate(() => chrome.alarms.create('zeroGrokReset:claude', { when: Date.now() + 300 }));
+  const n = await waitFor(async () => (await notes()).find((x) => x.id === 'zero-grok-reset-claude'), { msg: 'reset notification' });
+  assert(/Claude limit has reset/.test(n.message), n.message);
+});
+
+await check('A reading with a reset time schedules the reset alarm', async () => {
+  const at = Date.now() + 2 * 3600000;
+  await send(ext, { type: 'USAGE_DATA', payload: { provider: 'gemini', usedPercent: 30, remainingPercent: 70, resetAt: at, source: 'usage-page' } });
+  const a = await waitFor(() => ext.evaluate(() => chrome.alarms.get('zeroGrokReset:gemini')), { msg: 'reset alarm' });
+  assert(Math.abs(a.scheduledTime - (at + 15000)) < 2000, 'scheduled ' + a.scheduledTime);
+});
+
+await check('Badge modes: lowest / specific provider / off; estimates excluded', async () => {
+  const badge = () => env.sw.evaluate(() => chrome.action.getBadgeText({}));
+  await send(ext, { type: 'SAVE_SETTINGS', payload: { badgeMode: 'lowest' } });
+  const low = await badge();
+  assert(low === 'LOW', 'lowest (grok 5%) → ' + low);
+  await send(ext, { type: 'SAVE_SETTINGS', payload: { badgeMode: 'gemini' } });
+  assert((await badge()) === '70%', 'gemini → ' + (await badge()));
+  await send(ext, { type: 'SAVE_SETTINGS', payload: { badgeMode: 'chatgpt' } });
+  assert((await badge()) === '', 'estimate-only provider must not show a badge');
+  await send(ext, { type: 'SAVE_SETTINGS', payload: { badgeMode: 'off' } });
+  assert((await badge()) === '', 'off');
+  await send(ext, { type: 'SAVE_SETTINGS', payload: { badgeMode: 'lowest', alertThresholds: [70, 90, 100] } });
+  return 'LOW / 70% / "" / ""';
+});
+
+area('Multi-tab');
+await check('Several AI tabs at once: one can per tab for its own provider; "Refresh all" updates every tab', async () => {
+  mock.grok = 'free';
+  const t1 = await env.ctx.newPage(); await t1.goto('https://grok.com/');
+  const t2 = await env.ctx.newPage(); await t2.goto('https://grok.com/c/abc');
+  const t3 = await env.ctx.newPage(); await t3.goto('https://claude.ai/new');
+  for (const [pg, id] of [[t1, 'grok'], [t2, 'grok'], [t3, 'claude']]) await pg.waitForSelector(canSel(id));
+  await waitFor(async () => (await canText(t1, 'grok')) === '30%' && (await canText(t2, 'grok')) === '30%', { msg: 'both grok tabs 30%' });
+  for (const pg of [t1, t2, t3]) assert((await pg.locator('.zg-can-root').count()) === 1, 'exactly one can per tab');
+  GROK_LIMITS['grok-3|DEFAULT'].remainingQueries = 20;
+  GROK_LIMITS['grok-3|REASONING'].remainingQueries = 16;
+  const pop = await extPage(env, '/popup/popup.html');
+  await pop.click('#refresh');
+  await waitFor(async () => (await canText(t1, 'grok')) === '50%' && (await canText(t2, 'grok')) === '50%', { timeout: 12000, msg: 'both tabs refreshed to 50%' });
+  GROK_LIMITS['grok-3|DEFAULT'].remainingQueries = 12;
+  GROK_LIMITS['grok-3|REASONING'].remainingQueries = 8;
+  for (const pg of [t1, t2, t3, pop]) await pg.close();
+});
+
+area('Popup: history / forecast / countdown / share / update banner');
 // ---- Popup / options / onboarding
 await check('Popup: cards, confidence chips, reset, forecast, suggestion, 7/30-day chart', async () => {
   const now = Date.now();
@@ -574,6 +720,7 @@ await check('Popup: update banner only when opted in and a newer version is know
   await pg.close();
 });
 
+area('Options & export');
 await check('Options: save round-trip, threshold validation, quiet hours, badge mode', async () => {
   const pg = await extPage(env, '/options/options.html');
   await pg.waitForSelector('#provider-list input[type="checkbox"]');
@@ -641,6 +788,53 @@ await check('Options: clear history asks first, then empties local history', asy
   await pg.close();
 });
 
+
+area('Themes & reduce motion');
+const isDark = (rgb) => { const m = rgb.match(/\d+/g).map(Number); return (0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) < 100; };
+await check('Dark theme + reduce motion apply to popup, can and panel; light switches live', async () => {
+  await send(ext, { type: 'SAVE_SETTINGS', payload: { theme: 'dark', reduceMotion: true } });
+  const pop = await extPage(env, '/popup/popup.html');
+  await pop.waitForSelector('.provider-card');
+  assert((await pop.evaluate(() => document.documentElement.dataset.theme)) === 'dark');
+  const bg = await pop.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  assert(isDark(bg), 'popup background not dark: ' + bg);
+  assert(await pop.evaluate(() => document.documentElement.classList.contains('reduce-motion')));
+  await pop.setViewportSize({ width: 380, height: 760 });
+  await pop.screenshot({ path: path.join(ART, 'v15-popup-dark.png'), fullPage: true });
+  const g = await env.ctx.newPage();
+  await g.goto('https://grok.com/');
+  await g.waitForSelector(canSel('grok'));
+  await waitFor(async () => /zg-theme-dark/.test(await g.getAttribute(canSel('grok'), 'class')), { msg: 'can dark' });
+  assert(/zg-reduce-motion/.test(await g.getAttribute(canSel('grok'), 'class')), 'reduce-motion class');
+  const anim = await g.evaluate((sel) => getComputedStyle(document.querySelector(sel)).animationName, canSel('grok'));
+  assert(anim === 'none', 'can still animates: ' + anim);
+  await g.click(canSel('grok') + ' .zg-percent');
+  await g.locator('#zero-grok-panel-grok.zg-open').waitFor();
+  const panelBg = await g.evaluate(() => getComputedStyle(document.querySelector('#zero-grok-panel-grok')).backgroundColor);
+  assert(isDark(panelBg), 'panel not dark: ' + panelBg);
+  await g.screenshot({ path: path.join(ART, 'v15-grok-panel-dark.png') });
+  await send(ext, { type: 'SAVE_SETTINGS', payload: { theme: 'light', reduceMotion: false } });
+  await waitFor(async () => /zg-theme-light/.test(await g.getAttribute(canSel('grok'), 'class')), { msg: 'can light (live)' });
+  await waitFor(async () => !isDark(await g.evaluate(() => getComputedStyle(document.querySelector('#zero-grok-panel-grok')).backgroundColor)), { msg: 'panel light (live)' });
+  assert(!/zg-reduce-motion/.test(await g.getAttribute(canSel('grok'), 'class')));
+  await g.close(); await pop.close();
+});
+
+await check('Auto theme follows the system colour scheme', async () => {
+  await send(ext, { type: 'SAVE_SETTINGS', payload: { theme: 'auto' } });
+  const pop = await extPage(env, '/popup/popup.html');
+  await pop.emulateMedia({ colorScheme: 'dark' });
+  await pop.waitForSelector('.provider-card');
+  assert(isDark(await pop.evaluate(() => getComputedStyle(document.body).backgroundColor)), 'auto+dark');
+  await pop.emulateMedia({ colorScheme: 'light' });
+  assert(!isDark(await pop.evaluate(() => getComputedStyle(document.body).backgroundColor)), 'auto+light');
+  await pop.close();
+});
+
+area('First-run setup');
+await check('Onboarding page opens automatically on first install', async () => {
+  assert(env.onboardingOpened, 'onboarding tab did not open on install');
+});
 await check('Onboarding: first-run setup lists providers + plans and saves', async () => {
   const pg = await extPage(env, '/onboarding/onboarding.html');
   await pg.waitForSelector('#providers input[type="checkbox"]');
@@ -658,14 +852,40 @@ await check('Onboarding: first-run setup lists providers + plans and saves', asy
   assert(s.plans.grok === 'supergrok', 'plan saved: ' + s.plans.grok);
 });
 
+area('i18n (en / hi)');
 await check('i18n: chrome.i18n substitutions work for the English bundle', async () => {
   const msg = await ext.evaluate(() => chrome.i18n.getMessage('resetsInAt', ['2h 14m', '5:30 PM']));
   assert(msg === 'Resets in 2h 14m (at 5:30 PM)', msg);
   assert((await ext.evaluate(() => chrome.i18n.getMessage('extName'))) === 'Zero Grok');
 });
 
+area('Storage clear / recovery');
+await check('After clearing all extension storage: defaults return, popup + options + can still work', async () => {
+  await ext.evaluate(async () => { await chrome.storage.local.clear(); await chrome.storage.sync.clear(); });
+  const s = await send(ext, { type: 'GET_SETTINGS' });
+  assert(s.enableGrok === true && s.autoCheckUpdates === false && s.theme === 'auto' && JSON.stringify(s.alertThresholds) === '[70,90,100]', JSON.stringify(s));
+  const pop = await extPage(env, '/popup/popup.html');
+  await pop.waitForSelector('.provider-card');
+  assert((await pop.locator('.provider-card').count()) === 4, 'default 4 providers');
+  assert(await pop.locator('#empty-hint').isVisible(), 'empty hint');
+  assert(await pop.locator('#history').isHidden(), 'history hidden when empty');
+  const op = await extPage(env, '/options/options.html');
+  await op.waitForSelector('#provider-list input');
+  assert((await op.inputValue('#thresholds')).replace(/\s/g, '') === '70,90,100');
+  mock.grok = 'free';
+  const g = await env.ctx.newPage();
+  await g.goto('https://grok.com/');
+  await g.waitForSelector(canSel('grok'));
+  await waitFor(async () => (await canText(g, 'grok')) === '30%', { msg: 'can works after clear' });
+  await waitFor(async () => (await pop.locator('.provider-card[data-provider="grok"] .pc-pct').textContent()) === '30%', { msg: 'popup shows new reading live' });
+  const errs = [...pop.__errs, ...op.__errs];
+  assert(!errs.length, errs.join(' | '));
+  for (const pg of [g, pop, op]) await pg.close();
+});
+
 await env.ctx.close();
 
+area('Optional providers');
 // ---- Optional providers: test copy where the optional hosts are pre-granted
 await check('Optional providers (Perplexity counter, DeepSeek banner, Copilot estimate) via runtime-registered scripts', async () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'zg-ext-opt-'));
@@ -676,7 +896,7 @@ await check('Optional providers (Perplexity counter, DeepSeek banner, Copilot es
   const env2 = await launch(tmp, 'opt');
   try {
     const e = await extPage(env2, '/popup/popup.html');
-    await send(e, { type: 'SAVE_SETTINGS', payload: { enablePerplexity: true, enableDeepseek: true, enableCopilot: true, onboardingComplete: true } });
+    await send(e, { type: 'SAVE_SETTINGS', payload: { enablePerplexity: true, enableDeepseek: true, enableCopilot: true, enableMistral: true, enableMetaai: true, onboardingComplete: true } });
     const ids = await waitFor(async () => {
       const list = await env2.sw.evaluate(() => chrome.scripting.getRegisteredContentScripts().then((l) => l.map((x) => x.id)));
       return list.includes('zg-perplexity') && list.includes('zg-copilot') ? list : null;
@@ -689,6 +909,22 @@ await check('Optional providers (Perplexity counter, DeepSeek banner, Copilot es
     await ds.goto('https://chat.deepseek.com/');
     await ds.waitForSelector(canSel('deepseek'));
     await waitFor(async () => /zg-at-limit/.test(await ds.getAttribute(canSel('deepseek'), 'class')), { msg: 'deepseek at limit' });
+    const mi = await env2.ctx.newPage();
+    await mi.goto('https://chat.mistral.ai/chat');
+    await mi.waitForSelector(canSel('mistral'));
+    await waitFor(async () => (await canText(mi, 'mistral')) === '5', { msg: 'le chat "5"' });
+    const me = await env2.ctx.newPage();
+    await me.goto('https://www.meta.ai/');
+    await me.waitForSelector(canSel('metaai'));
+    await waitFor(async () => /zg-at-limit/.test(await me.getAttribute(canSel('metaai'), 'class')), { msg: 'meta ai at limit' });
+    // No invented totals: counters stay counts, not percentages.
+    const st = await e.evaluate(() => chrome.storage.local.get('zeroGrokUsage').then((r) => r.zeroGrokUsage.byProvider));
+    assert(st.perplexity.remaining === 12 && st.perplexity.remainingPercent == null, 'perplexity ' + JSON.stringify(st.perplexity));
+    assert(st.mistral.remaining === 5 && st.mistral.remainingPercent == null, 'mistral ' + JSON.stringify(st.mistral));
+    const pop2 = await extPage(env2, '/popup/popup.html');
+    await pop2.waitForSelector('.provider-card[data-provider="metaai"]');
+    assert((await pop2.locator('.provider-card').count()) === 9, 'popup cards ' + (await pop2.locator('.provider-card').count()));
+    assert((await pop2.locator('.provider-card[data-provider="perplexity"] .pc-pct').textContent()) === '12 left');
     const cp = await env2.ctx.newPage();
     await cp.goto('https://copilot.microsoft.com/');
     await cp.waitForSelector(canSel('copilot'));
@@ -708,6 +944,7 @@ await check('Optional providers (Perplexity counter, DeepSeek banner, Copilot es
 });
 
 
+area('i18n (en / hi)');
 await check('i18n: Hindi browser locale renders the Hindi popup and options', async () => {
   const env3 = await launch(EXT_SRC, 'hi', { locale: 'hi-IN' });
   try {
@@ -729,6 +966,10 @@ await check('i18n: Hindi browser locale renders the Hindi popup and options', as
 });
 
 const pass = results.filter((r) => r.pass).length;
+const byArea = {};
+for (const r of results) { byArea[r.area] = byArea[r.area] || { pass: 0, total: 0 }; byArea[r.area].total++; if (r.pass) byArea[r.area].pass++; }
+console.log('\nPer area:');
+for (const [a, v] of Object.entries(byArea)) console.log(`  ${v.pass === v.total ? 'OK  ' : 'FAIL'} ${a}: ${v.pass}/${v.total}`);
 console.log(`\n${pass}/${results.length} end-to-end checks passed. Screenshots: ${ART}`);
 fs.writeFileSync(path.join(ART, 'e2e-results.json'), JSON.stringify(results, null, 2));
 process.exit(pass === results.length ? 0 : 1);

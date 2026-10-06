@@ -269,7 +269,7 @@
     "message": "Watch your AI usage drain like a soda can. Never get rate-limited by surprise."
   },
   "onbTip": {
-    "message": "Open a supported site while signed in and the can appears. Click it for details, drag it to any corner, or press Alt+Shift+Z. For Gemini, open gemini.google.com/usage once."
+    "message": "Open a supported site while signed in and the can appears. Click it for details, drag it to any corner, or press Alt+Shift+U. For Gemini, open gemini.google.com/usage once."
   },
   "onbTipTitle": {
     "message": "Quick tips"
@@ -440,7 +440,7 @@
     "message": "My AI usage today"
   },
   "shortcutsHint": {
-    "message": "Alt+Shift+Z opens the usage panel. Alt+U shows or hides the can."
+    "message": "Alt+Shift+U opens the usage panel. Alt+U shows or hides the can."
   },
   "shortcutsManual": {
     "message": "Open your browser’s extension shortcut settings"

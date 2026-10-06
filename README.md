@@ -23,7 +23,7 @@ The ZIP is rebuilt automatically by GitHub Actions whenever files under `extensi
 ## What you get
 
 - **The can**: % left, a reset countdown, and a confidence label on every number. Drag it anywhere (it snaps to corners), shrink it to a dot, or hide it on one site.
-- **Alt+Shift+Z** opens the usage panel on the current AI site. **Alt+U** shows or hides the can.
+- **Alt+Shift+U** opens the usage panel on the current AI site. **Alt+U** shows or hides the can.
 - **Popup**: every provider at a glance, a burn-rate forecast ("at this pace you'll hit zero ~4:10 PM"), per-model breakdowns, 7/30-day history, and a share card (PNG made locally).
 - **Alerts**: your own thresholds (default 70/90/100%), quiet hours, a "limit reset" notification, and a suggestion to switch to an AI that still has room.
 - **Health check**: if a site changes and Zero Grok can't read it, you see "tracking needs an update" instead of a wrong number.
@@ -66,9 +66,11 @@ Open https://gemini.google.com/usage once while signed in. Your other Gemini tab
 cd tests
 npm ci
 npm run lint        # web-ext lint (0 errors expected)
+npm run lint:firefox   # lint as Firefox sees the manifest, warnings = errors
 npx playwright install chromium
 npm test            # unit tests + end-to-end tests with the extension loaded in Chromium
+npm run test:keys   # real Alt+Shift+U / Alt+U shortcuts (needs an X display + xdotool)
 python3 ../tools/gen_assets.py   # regenerate icons + can-pop.wav (needs Pillow)
 ```
 
-CI (`.github/workflows/extension-ci.yml`) runs lint and both test suites on every PR that touches `extension/` or `tests/`.
+CI (`.github/workflows/extension-ci.yml`) runs both lints, the unit and end-to-end suites, and the real-shortcut test (under Xvfb) on every PR that touches `extension/` or `tests/`.

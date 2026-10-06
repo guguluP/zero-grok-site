@@ -249,6 +249,7 @@
       const d = byProvider[p.id];
       const rem = remainingOf(d);
       if (rem == null || rem < 30) continue;
+      if (confidenceOf(d.source) === 'estimate') continue; // never steer users using a rough guess
       if (!d.updatedAt || (now || Date.now()) - d.updatedAt > 12 * 3600000) continue;
       if (!best || rem > best.remaining) best = { to: p.id, label: p.label, remaining: rem };
     }

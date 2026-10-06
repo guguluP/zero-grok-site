@@ -41,6 +41,9 @@ jobs:
       - name: web-ext lint (fails on errors)
         run: npm run lint
 
+      - name: Firefox lint pass (as Firefox sees the manifest, warnings = errors)
+        run: npm run lint:firefox
+
       - name: Unit tests
         run: npm run test:unit
 
@@ -51,6 +54,11 @@ jobs:
         run: npm run test:e2e
         env:
           ARTIFACTS: ${{ github.workspace }}/tests/artifacts
+
+      - name: Real keyboard shortcuts (headed Chromium + xdotool under Xvfb)
+        run: |
+          sudo apt-get install -y --no-install-recommends xdotool
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x800x24" npm run test:keys
 
       - name: Upload screenshots
         if: always()
