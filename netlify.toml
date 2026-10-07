@@ -1,0 +1,10 @@
+# Zero Grok landing — static site (index.html + CSS/JS + downloads at repo root).
+# The Chrome extension under extension/ is loaded unpacked locally; Netlify only
+# hosts the marketing/landing page. Vercel config is left untouched.
+
+[build]
+  command = "true"
+  publish = "."
+
+[build.environment]
+  NODE_VERSION = "20"
